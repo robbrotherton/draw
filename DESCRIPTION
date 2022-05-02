@@ -1,0 +1,17 @@
+Package: draw
+Type: Package
+Title: Draw Basic Shapes
+Version: 0.0.9000
+Date: 2022-04-28
+Author: Rob Brotherton
+Maintainer: Rob Brotherton <rbrother@barnard.edu>
+Description: Some tools to draw (and show) basic shapes.
+License: GPL (>= 2)
+Imports: 
+    magrittr,
+    Rcpp (>= 1.0.8)
+LinkingTo: Rcpp
+RoxygenNote: 7.1.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
