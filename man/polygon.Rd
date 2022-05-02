@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapes.R
 \name{polygon}
 \alias{polygon}
-\title{Title}
+\title{Make an n-sided regular polygon}
 \usage{
 polygon(sides = 4, radius = 1)
 }
@@ -13,5 +13,5 @@ polygon(sides = 4, radius = 1)
 
 }
 \description{
-Title
+Make an n-sided regular polygon
 }

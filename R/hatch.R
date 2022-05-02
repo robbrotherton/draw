@@ -14,12 +14,20 @@
 #' circle() %>% hatch() %>% show()
 hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
 
+  width <-  max(df$x) - min(df$x)
+  height <- max(df$y) - min(df$y)
+
+  center_x <- min(df$x) + width/2
+  center_y <- min(df$y) + height/2
+
   # First create hatch segments in a bounding box with width and height equal to
   # the diagonal of the shape
-  hatch_paths <- hatch_overlay(df, spacing, angle)
+  hatch_paths <- df %>%
+    hatch_overlay(spacing) %>%
+    rotate(angle, around = c(center_x, center_y))
 
-  # Now we take each hatch path and check for intersections with each segment of
-  # the polygon
+  # Now we take the endpoints of each hatch path and check for intersections
+  # with each segment of the polygon
   h_segs <- nrow(hatch_paths)
   p_segs <- nrow(df) - 1
 
@@ -28,8 +36,8 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
   for(i in seq(from = 1, to = h_segs, by= 2)) {
 
-    P1 <- c(hatch_segments$x[i]   , hatch_segments$y[i])
-    P2 <- c(hatch_segments$x[i+1]   , hatch_segments$y[i+1])
+    P1 <- c(hatch_paths$x[i]   , hatch_paths$y[i])
+    P2 <- c(hatch_paths$x[i+1] , hatch_paths$y[i+1])
 
     # Inelegant fix here for discontinuous lines being drawn outside of the
     # shape (e.g. between points of a star). The solution is to start by
@@ -63,7 +71,12 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
 }
 
-hatch_overlay <- function(df, spacing, angle) {
+# still not quite working right for the stars...
+# star(7, m = 4) %>%
+#   hatch(spacing = .05, angle = 1.5, keep_outline = TRUE) %>%
+#   show(group = group)
+
+hatch_overlay <- function(df, spacing) {
 
   width <- max(df$x) - min(df$x)
   height <- max(df$y) - min(df$y)
@@ -80,20 +93,90 @@ hatch_overlay <- function(df, spacing, angle) {
            to =   y_center + diagonal/2,
            by = spacing)
 
-  paths <- data.frame(y = rep(y, each = 2),
-                      x = c(xmin, xmax))
-
-  rotate(paths, angle, x_center, y_center)
-
-  # segments <- data.frame(x    = rep(xmin, length(y)),
-  #                        xend = rep(xmax, length(y)),
-  #                        y    = y,
-  #                        yend = y)
-  #
-  # segments
-  # segments_to_paths(segments)
+  data.frame(y = rep(y, each = 2),
+             x = c(xmin, xmax))
 
 }
+
+
+line_to_wave <- function(P1, P2, points = 50, frequency = .1, amplitude = .1) {
+
+  points_x <- seq(from = P1[1], to = P2[1], length.out = points)
+  points_y <- seq(from = P1[2], to = P2[2], length.out = points)
+
+  tibble::tibble(x = points_x,
+                 y = points_y + cos(x/frequency) * amplitude)
+
+
+}
+
+lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1) {
+
+  out <- vector(mode = "list", length = nrow(hatch_df)/2)
+  index <- 0
+
+  for (l in seq(1, nrow(hatch_df), by = 2)) {
+
+    index <- index + 1
+
+    P1 <- c(hatch_df$x[l], hatch_df$y[l])
+    P2 <- c(hatch_df$x[l+1], hatch_df$y[l+1])
+
+    out[[index]] <- line_to_wave(P1, P2, points, frequency, amplitude)
+
+  }
+
+  dplyr::bind_rows(out, .id = "line")
+
+}
+
+# square() %>%
+#   hatch_overlay(angle = 0, spacing = .05) %>%
+#   lines_to_waves(frequency = .05, amplitude = .02) %>%
+#   show("path", group = line)
+
+
+hatch_wave <- function(df, spacing = .1,
+                       angle = 0,
+                       frequency = .1,
+                       amplitude = .1,
+                       keep_outline = TRUE,
+                       single_line = FALSE) {
+
+  # First create hatch segments in a bounding box with width and height equal to
+  # the diagonal of the shape
+  hatch_paths <- hatch_overlay(df, spacing) %>%
+    lines_to_waves(frequency, amplitude) %>%
+    rotate(angle, center_x, center_y)
+
+  # Now instead of taking the endpoints of each hatch path and checking for
+  # intersections with each segment of the polygon, we need to take each point
+  # along the line and check if it's inside or outside of the polygon
+
+  # hatch_paths$inside <- points_in_polygons(hatch_paths, df)
+
+  # # Want this to return a data.frame
+  #
+  # hatch_points <- res %>%
+  #   dplyr::bind_rows() %>%
+  #   tidyr::drop_na() %>%
+  #   dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2))
+  #
+  # if(keep_outline) {
+  #   df %>%
+  #     dplyr::mutate(group = 0) %>%
+  #     dplyr::bind_rows(hatch_points)
+  # } else {
+  #   return(hatch_points)
+  # }
+
+  hatch_paths
+
+}
+
+# square() %>%
+#   hatch_wave() %>%
+#   show("path", group = line)
 
 # hatch_overlay <- function(df, spacing) {
 #
@@ -122,70 +205,9 @@ hatch_overlay <- function(df, spacing, angle) {
 # }
 
 
-##' Determine the intersection of two lines L1 and L2 in two dimensions,
-##' using the formula described by Weisstein.
-##' @title Determine intersection between two lines
-##' @param P1 vector containing x,y coordinates of one end of L1
-##' @param P2 vector containing x,y coordinates of other end of L1
-##' @param P3 vector containing x,y coordinates of one end of L2
-##' @param P4 vector containing x,y coordinates of other end of L2
-##' @param interior.only boolean flag indicating whether only
-##' intersections inside L1 and L2 should be returned.
-##' @return Vector containing x,y coordinates of intersection of L1
-##' and L2.  If L1 and L2 are parallel, this is infinite-valued.  If
-##' \code{interior.only} is \code{TRUE}, then when the intersection
-##' does not occur between P1 and P2 and P3 and P4, a vector
-##' containing \code{NA}s is returned.
-##' @source Weisstein, Eric W. "Line-Line Intersection."
-##' From MathWorld--A Wolfram Web Resource.
-##' \url{http://mathworld.wolfram.com/Line-LineIntersection.html}
-##' @author David Sterratt
-##' @export
-##' @examples
-##' ## Intersection of two intersecting lines
-##' line.line.intersection(c(0, 0), c(1, 1), c(0, 1), c(1, 0))
-##'
-##' ## Two lines that don't intersect
-##' line.line.intersection(c(0, 0), c(0, 1), c(1, 0), c(1, 1))
-line.line.intersection <- function(P1, P2, P3, P4, interior.only=TRUE) {
-  P1 <- as.vector(P1)
-  P2 <- as.vector(P2)
-  P3 <- as.vector(P3)
-  P4 <- as.vector(P4)
-
-  dx1 <- P1[1] - P2[1]
-  dx2 <- P3[1] - P4[1]
-  dy1 <- P1[2] - P2[2]
-  dy2 <- P3[2] - P4[2]
-
-  D <- det(rbind(c(dx1, dy1),
-                 c(dx2, dy2)))
-  if (D==0) {
-    return(c(Inf, Inf))
-  }
-  D1 <- det(rbind(P1, P2))
-  D2 <- det(rbind(P3, P4))
-
-  X <- det(rbind(c(D1, dx1),
-                 c(D2, dx2)))/D
-  Y <- det(rbind(c(D1, dy1),
-                 c(D2, dy2)))/D
-
-  if (interior.only) {
-    ## Compute the fractions of L1 and L2 at which the intersection
-    ## occurs
-    lambda1 <- -((X-P1[1])*dx1 + (Y-P1[2])*dy1)/(dx1^2 + dy1^2)
-    lambda2 <- -((X-P3[1])*dx2 + (Y-P3[2])*dy2)/(dx2^2 + dy2^2)
-    if (!((lambda1>0) & (lambda1<1) &
-          (lambda2>0) & (lambda2<1))) {
-      return(data.frame(x = NA, y = NA))
-    }
-  }
-  return(data.frame(x = X, y = Y))
-}
 
 
-rotate <- function(df, angle = pi/2, x_center, y_center) {
+rotate <- function(df, angle = pi/2, around = c(0, 0)) {
 
   # w <- (max(df$x) - min(df$x))
   # h <-( max(df$y) - min(df$y))
@@ -193,39 +215,39 @@ rotate <- function(df, angle = pi/2, x_center, y_center) {
   # y_center <- min(df$y) + (max(df$y) - min(df$y))/2
 
   dplyr::mutate(df,
-                x = x - x_center,
-                y = y - y_center,
-                x0 = x * cos(angle) - y * sin(angle) + x_center,
-                y0 = y * cos(angle) + x * sin(angle) + y_center) %>%
+                x = x - around[1],
+                y = y - around[2],
+                x0 = x * cos(angle) - y * sin(angle) + around[1],
+                y0 = y * cos(angle) + x * sin(angle) + around[2]) %>%
     dplyr::select(x = x0, y = y0)
 }
 
 
 
-rotatex <- function(df, angle = pi/2) {
+# rotatex <- function(df, angle = pi/2) {
+#
+#   w <- (max(df$x) - min(df$x))
+#   h <-( max(df$y) - min(df$y))
+#   x_center <- min(df$x) + (max(df$x) - min(df$x))/2
+#   y_center <- min(df$y) + (max(df$y) - min(df$y))/2
+#
+#   dplyr::mutate(df,
+#                 x = x - x_center,
+#                 y = y - y_center,
+#                 x0 = x * cos(angle) - y * sin(angle),
+#                 y0 = y * cos(angle) + x * sin(angle)) %>%
+#     dplyr::select(x = x0, y = y0)
+# }
 
-  w <- (max(df$x) - min(df$x))
-  h <-( max(df$y) - min(df$y))
-  x_center <- min(df$x) + (max(df$x) - min(df$x))/2
-  y_center <- min(df$y) + (max(df$y) - min(df$y))/2
-
-  dplyr::mutate(df,
-                x = x - x_center,
-                y = y - y_center,
-                x0 = x * cos(angle) - y * sin(angle),
-                y0 = y * cos(angle) + x * sin(angle)) %>%
-    dplyr::select(x = x0, y = y0)
-}
-
-odds <- function(x) {
-  i <- 1:length(x)
-  x[i%%2!=0]
-}
-
-evens <- function(x) {
-  i <- 1:length(x)
-  x[i%%2==0]
-}
+# odds <- function(x) {
+#   i <- 1:length(x)
+#   x[i%%2!=0]
+# }
+#
+# evens <- function(x) {
+#   i <- 1:length(x)
+#   x[i%%2==0]
+# }
 
 
 intersect <- function(poly_df, x = x, xend = xend, y = y, yend = yend, correction = FALSE, interior.only = TRUE) {

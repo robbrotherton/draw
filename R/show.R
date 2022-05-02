@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-show <- function(df, geom = c("path", "point", "polygon", "line"), fixed = TRUE, ...) {
+show <- function(df, geom = c("path", "point", "polygon", "line"), group = NULL, fixed = TRUE, ...) {
 
   geom <- match.arg(geom)
 
@@ -17,7 +17,7 @@ show <- function(df, geom = c("path", "point", "polygon", "line"), fixed = TRUE,
                  polygon = ggplot2::geom_polygon(...),
                  line    = ggplot2::geom_line(...))
 
-  ggplot2::ggplot(df, ggplot2::aes(x, y)) +
+  ggplot2::ggplot(df, ggplot2::aes(x, y, group = {{ group }})) +
     geom +
     ggplot2::labs(x = NULL, y = NULL) +
     if (fixed) ggplot2::coord_fixed()

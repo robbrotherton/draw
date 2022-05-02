@@ -10,16 +10,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcpp_hello_world
-List rcpp_hello_world();
-RcppExport SEXP _draw_rcpp_hello_world() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpp_hello_world());
-    return rcpp_result_gen;
-END_RCPP
-}
 // spiral
 DataFrame spiral(int coils, int points, double radius, double inner_radius);
 RcppExport SEXP _draw_spiral(SEXP coilsSEXP, SEXP pointsSEXP, SEXP radiusSEXP, SEXP inner_radiusSEXP) {
@@ -36,7 +26,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_draw_rcpp_hello_world", (DL_FUNC) &_draw_rcpp_hello_world, 0},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };
