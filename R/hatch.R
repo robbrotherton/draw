@@ -21,7 +21,8 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   center_y <- min(df$y) + height/2
 
   # First create hatch segments in a bounding box with width and height equal to
-  # the diagonal of the shape
+  # the diagonal of the shapex, then rotate that df of hatch lines to the
+  # desired angle
   hatch_paths <- df %>%
     hatch_overlay(spacing) %>%
     rotate(angle, around = c(center_x, center_y))
@@ -31,28 +32,37 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   h_segs <- nrow(hatch_paths)
   p_segs <- nrow(df) - 1
 
-  res <- vector(mode = "list", length = h_segs/2 * p_segs)
+  # going to have a result for each line, then bind them into a df
+  res <- vector(mode = "list", length = h_segs/2)
   index <- 0
 
-  for(i in seq(from = 1, to = h_segs, by= 2)) {
+  for(i in seq(from = 1, to = h_segs, by = 2)) {
 
     P1 <- c(hatch_paths$x[i]   , hatch_paths$y[i])
     P2 <- c(hatch_paths$x[i+1] , hatch_paths$y[i+1])
 
-    # Inelegant fix here for discontinuous lines being drawn outside of the
-    # shape (e.g. between points of a star). The solution is to start by
-    # checking the last side, rather than the first one. But it doesn't seem
-    # like this would generalize to all irregular shapes...
-    for(j in c(p_segs, 1:(p_segs-1))) {
-    # for(j in 1:p_segs) {
+    # The solution is to save all intersections for a single line, then
+    # arrange them by distance from the origin of the hatch line. This should
+    # generalize to any shape and makes the order of the polygon segments
+    # irrelevant.
+
+    line_intersections_df <- data.frame(x = vector("numeric", length = p_segs),
+                                        y = vector("numeric", length = p_segs))
+
+    for(j in 1:p_segs) {
 
       P3 <- c(df$x[j]  , df$y[j])
       P4 <- c(df$x[j+1], df$y[j+1])
 
-      index <- index + 1
-      res[[index]] <- line.line.intersection(P1, P2, P3, P4)
+      line_intersections_df[j,] <- line.line.intersection(P1, P2, P3, P4)
 
     }
+
+    index <- index + 1
+    res[[index]] <- line_intersections_df %>%
+      # tidyr::drop_na() %>%
+      dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) %>%
+      dplyr::arrange(d)
 
   }
 
@@ -71,10 +81,12 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
 }
 
-# still not quite working right for the stars...
-# star(7, m = 4) %>%
-#   hatch(spacing = .05, angle = 1.5, keep_outline = TRUE) %>%
+# Now it seems to be working for any star!
+# star(7, m = 4.5) %>%
+#   hatch(spacing = .02, angle = 1.5, keep_outline = TRUE) %>%
 #   show(group = group)
+
+# Need to try letters next...
 
 hatch_overlay <- function(df, spacing) {
 
