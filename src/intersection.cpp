@@ -1,11 +1,8 @@
 // C++ Implementation. To find the point of
 // intersection of two lines
+// https://www.geeksforgeeks.org/program-for-point-of-intersection-of-two-lines/
 #include <Rcpp.h>
 #include <bits/stdc++.h>
-
-// This pair is used to store the X and Y
-  // coordinates of a point respectively
-// define pdd pair<double, double>
 
 // using namespace std;
 using namespace Rcpp;

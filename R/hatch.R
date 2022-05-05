@@ -84,7 +84,6 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
   if(keep_outline) {
     df %>%
-      # dplyr::mutate(group = 0) %>%
       dplyr::bind_rows(hatch_points)
   } else {
     return(hatch_points)
@@ -158,10 +157,10 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 #   hatch_overlay(spacing = .05) %>%
 #   rotate(pi*.25) %>%
 #   lines_to_waves() %>%
-#   dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
-#                                             dplyr::mutate(square(), group = 0)))
+#   dplyr::mutate(inside = pointsInPolygons(data.frame(x, y),
+#                                             dplyr::mutate(square(), group = 1)))
 # #
-# # d$inside <- points_in_polygons(d, dplyr::mutate(square(), group = 0))
+# d$inside <- points_in_polygons(d, dplyr::mutate(square(), group = 1))
 # #
 # # # could do this within the pipe...
 # #   # dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
@@ -169,7 +168,7 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 # #   # rotate(pi*.25) %>%
 # #   # dplyr::mutate(group = 1) %>%
 # ggplot2::ggplot() +
-#   ggplot2::geom_path(data = dplyr::filter(d, inside), ggplot2::aes(x, y, group = group, color = inside)) +
+#   ggplot2::geom_path(data = d, ggplot2::aes(x, y, group = group, color = inside)) +
 #   ggplot2::geom_path(data = square(), ggplot2::aes(x, y, group = NULL)) +
 #   ggplot2::coord_fixed()
 
@@ -213,35 +212,6 @@ hatch_wave <- function(df, spacing = .1,
 }
 
 
-# hatch_overlay <- function(df, spacing) {
-#
-#   width <- max(df$x) - min(df$x)
-#   height <- max(df$y) - min(df$y)
-#   diagonal <- sqrt(width^2 + height^2)
-#   # rotated hatch line length==diagonal of bounding box
-#
-#   x_center <- min(df$x) + width/2
-#   y_center <- min(df$y) + height/2
-#
-#   xmin <- min(df$x) - width * .1
-#   xmax <- max(df$x) + width * .1
-#   y <- seq(from = min(df$y) - height * .1,
-#            to =   max(df$y) + height * .1,
-#            by = spacing)
-#
-#   segments <- data.frame(x    = rep(xmin, length(y)),
-#                          xend = rep(xmax, length(y)),
-#                          y    = y,
-#                          yend = y)
-#
-#   segments
-#   # segments_to_paths(segments)
-#
-# }
-
-
-
-
 rotate <- function(df, angle = pi/2, around = c(0, 0)) {
 
   # w <- (max(df$x) - min(df$x))
@@ -259,134 +229,9 @@ rotate <- function(df, angle = pi/2, around = c(0, 0)) {
 
 
 
-
-intersect <- function(poly_df, x = x, xend = xend, y = y, yend = yend, correction = FALSE, interior.only = TRUE) {
-
-  out_x <- numeric()
-  out_y <- numeric()
-  rev <- FALSE
-
-  for(i in 1:(nrow(poly_df)-1)) {
-    j <- i+1
-    line1 <- c(x,y)
-    line2 <- c(xend,yend)
-    poly1 <- c(poly_df$x[i], poly_df$y[i])
-    poly2 <- c(poly_df$x[j], poly_df$y[j])
-
-    int_coords <- line.line.intersection(P1 = line1,
-                                         P2 = line2,
-                                         P3 = poly1,
-                                         P4 = poly2,
-                                         interior.only = TRUE)
-
-    ix <- int_coords[1]
-    iy <- int_coords[2]
-
-    if(!is.na(ix) & !is.infinite(ix)) {
-      out_x[length(out_x)+1] <- ix
-      out_y[length(out_y)+1] <- iy
-
-      if(i==1) rev = TRUE
-    }
-
-  }
-
-  # out <- unlist(out)
-  # out <- out[!is.na(out) & !is.infinite(out)]
-
-  # the function works weirdly, where sometimes it'll give NA for
-  # a line that hits the exact end of a ploygon edge. This is a hacky
-  # workaround and I'm not even sure why it works...
-  if(correction & length(out_x)==2) {
-    out <- intersect(dplyr::mutate(poly_df, x = x+.1, y = y), x = x, xend = xend, y = y, yend = yend)
-  }
-
-  if(length(out_x)<2) return(NULL)
-  if(length(out_y)<2) return(NULL)
-
-  # if(rev) {
-  # l <- length(out_x)
-  # out_x <- c(out_x[2:l], out_x[1])
-  # out_y <- c(out_y[2:l], out_y[1])
-  # }
-  #
-
-  out <- data.frame(x = out_x, y = out_y) %>%
-    # group_by(y) %>%
-    dplyr::arrange(x)
-
-  out_x <- out$x
-  out_y <- out$y
-
-
-  len_out <- length(out_x)
-  # len_out <- len_out - (len_out%%2)
-
-  out <- data.frame(ix = odds(out_x)[1:len_out],
-                ixend = evens(out_x)[1:len_out],
-                iy = odds(out_y)[1:len_out],
-                iyend = evens(out_y)[1:len_out])
-
-  return(out)
-
-}
-
-
-# for this version, rotate the whole polygon instead of lines
-# then can sort intersection coords left to right (or right to left)?
-
-hatch2 <- function(poly_df, angle = 0, spacing = 1, correction = FALSE) {
-
-  # first, rotate the polygon df
-  width <- (max(poly_df$x) - min(poly_df$x))
-  height <- (max(poly_df$y) - min(poly_df$y))
-  x_center <- min(poly_df$x) + (max(poly_df$x) - min(poly_df$x))/2
-  y_center <- min(poly_df$y) + (max(poly_df$y) - min(poly_df$y))/2
-
-  poly_df <- poly_df %>%
-    rotate_poly(angle)
-  # }
-  # now create the hatching df
-  # w <- (max(poly_df$x) - min(poly_df$x))
-  # h <- (max(poly_df$y) - min(poly_df$y))
-  # x_center <- min(poly_df$x) + (max(poly_df$x) - min(poly_df$x))/2
-  # y_center <- min(poly_df$y) + ( max(poly_df$y) - min(poly_df$y))/2
-
-  h <- tibble::tibble(y = seq(min(poly_df$y)*1.1,max(poly_df$y)*1.1,by=spacing),
-                      yend = y,
-                      x = rep(c(min(poly_df$x)*1.1, max(poly_df$x)*1.1), length.out = length(y)),
-                      xend = rep(c(max(poly_df$x)*1.1,min(poly_df$x)*1.1), length.out = length(y)))
-
-  # now figure out where hatch lines intersect the polygon
-  h <- h %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(inter = list(intersect(poly_df, x, xend, y, yend, correction = correction))) %>%
-    tidyr::unnest_wider(inter) %>%
-    tidyr::unnest(cols = c(ix, ixend, iy, iyend)) %>%
-    dplyr::filter(!is.na(ix)) %>%
-    dplyr::select(x = ix, y = iy, xend = ixend, yend = iyend)
-
-  # if(angle != 0){
-  angle = -angle
-  # width <- (max(poly_df$x) - min(poly_df$x))
-  # height <- (max(poly_df$y) - min(poly_df$y))
-  # x_center <- min(poly_df$x) + (max(poly_df$x) - min(poly_df$x))/2
-  # y_center <- min(poly_df$y) + (max(poly_df$y) - min(poly_df$y))/2
-  h <- h %>%
-    # rowwise() %>%
-    dplyr::mutate(x0 = x * cos(angle) - y * sin(angle) + x_center,
-           xend0 = xend * cos(angle) - yend * sin(angle) + x_center,
-           y0 = y * cos(angle) + x * sin(angle) + y_center,
-           yend0 = yend * cos(angle) + xend * sin(angle) + y_center) %>%
-    dplyr::select(x = x0, y = y0, xend = xend0, yend = yend0)
-  # }
-  return(h)
-
-}
-
-paths_to_segments <- function(df) {
-
-}
+# paths_to_segments <- function(df) {
+#
+# }
 
 segments_to_paths <- function(df) {
   df %>%
@@ -404,3 +249,46 @@ segments_to_paths <- function(df) {
 }
 
 
+inset_fill <- function(df, spacing = .1, single_line = FALSE) {
+
+  data <- purrr::map_df(.x = seq(1, to = 0+spacing, by = -spacing),
+                        .f = ~df * .x,
+                        .id = "group") %>%
+    dplyr::mutate(group = as.numeric(group))
+
+  if (single_line) {
+
+    # Need to edit the last point of each group
+
+    # Tried this as a 'proportion of line' problem but couldn't get it to work
+    # reliably. Still seems like there should be a viable solution that way, but
+    # I'm reframing as a line intersection problem instead: Where does the first
+    # line of the n+1th polygon intersect the last line of the nth polygon?
+
+    n <- nrow(df)
+    groups <- unique(data$group)
+
+    for (i in 1:(length(groups)-1)) {
+
+      P1 <- c(data$x[n*i-1], data$y[n*i-1])
+      P2 <- c(data$x[n*i]  , data$y[n*i])
+      P3 <- c(data$x[n*i+2], data$y[n*i+2])
+      P4 <- c(data$x[n*i+1], data$y[n*i+1])
+      # print(c(P1, P2, P3, P4))
+      #
+      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
+
+      # print(int)
+
+      data$x[n*i] <- int$x
+      data$y[n*i] <- int$y
+
+    }
+
+
+  }
+
+  # drop the last row, since it completes the innermost shape
+  data[1:(nrow(data)-1),]
+
+}

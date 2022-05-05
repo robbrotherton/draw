@@ -31,6 +31,9 @@ test_that("points are correctly labeled as being inside or outside polygons", {
   expect_identical(points_in_polygons(test_points, test_polygons),
                    c(FALSE, TRUE, FALSE, TRUE, FALSE))
 
+  expect_identical(pointsInPolygons(test_points, test_polygons),
+                   c(FALSE, TRUE, FALSE, TRUE, FALSE))
+
   # ggplot() +
   #   geom_path(data = test_polygons, aes(x, y, group = group)) +
   #   geom_point(dat = test_points, aes(x, y, color = inside)) +
