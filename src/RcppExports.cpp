@@ -10,6 +10,32 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// lineLineIntersection
+DataFrame lineLineIntersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4);
+RcppExport SEXP _draw_lineLineIntersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type P1(P1SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P2(P2SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P3(P3SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P4(P4SEXP);
+    rcpp_result_gen = Rcpp::wrap(lineLineIntersection(P1, P2, P3, P4));
+    return rcpp_result_gen;
+END_RCPP
+}
+// pointsInPolygons
+LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons);
+RcppExport SEXP _draw_pointsInPolygons(SEXP pointsSEXP, SEXP polygonsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type points(pointsSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type polygons(polygonsSEXP);
+    rcpp_result_gen = Rcpp::wrap(pointsInPolygons(points, polygons));
+    return rcpp_result_gen;
+END_RCPP
+}
 // spiral
 DataFrame spiral(int coils, int points, double radius, double inner_radius);
 RcppExport SEXP _draw_spiral(SEXP coilsSEXP, SEXP pointsSEXP, SEXP radiusSEXP, SEXP inner_radiusSEXP) {
@@ -26,6 +52,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_draw_lineLineIntersection", (DL_FUNC) &_draw_lineLineIntersection, 4},
+    {"_draw_pointsInPolygons", (DL_FUNC) &_draw_pointsInPolygons, 2},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };

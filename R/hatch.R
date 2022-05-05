@@ -14,14 +14,18 @@
 #' circle() %>% hatch() %>% show()
 hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
 
+  if(!"group" %in% names(df)) {
+    df$group <- 0
+  }
+
   width <-  max(df$x) - min(df$x)
   height <- max(df$y) - min(df$y)
 
   center_x <- min(df$x) + width/2
   center_y <- min(df$y) + height/2
 
-  # First create hatch segments in a bounding box with width and height equal to
-  # the diagonal of the shapex, then rotate that df of hatch lines to the
+  # First, create hatch segments in a bounding box with width and height equal
+  # to the diagonal of the shapex, then rotate that df of hatch lines to the
   # desired angle
   hatch_paths <- df %>%
     hatch_overlay(spacing) %>%
@@ -32,7 +36,7 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   h_segs <- nrow(hatch_paths)
   p_segs <- nrow(df) - 1
 
-  # going to have a result for each line, then bind them into a df
+  # We'll have a data.frame for each line, then bind_rows() at the end
   res <- vector(mode = "list", length = h_segs/2)
   index <- 0
 
@@ -41,7 +45,7 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
     P1 <- c(hatch_paths$x[i]   , hatch_paths$y[i])
     P2 <- c(hatch_paths$x[i+1] , hatch_paths$y[i+1])
 
-    # The solution is to save all intersections for a single line, then
+    # The solution is to save all intersections for a single line together, then
     # arrange them by distance from the origin of the hatch line. This should
     # generalize to any shape and makes the order of the polygon segments
     # irrelevant.
@@ -50,6 +54,12 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
                                         y = vector("numeric", length = p_segs))
 
     for(j in 1:p_segs) {
+
+      if(df$group[j+1] != df$group[j]) {
+        # Need to skip rows where the next row is from a different polygon
+        line_intersections_df[j,] <- data.frame(x = NA, y = NA)
+        next
+      }
 
       P3 <- c(df$x[j]  , df$y[j])
       P4 <- c(df$x[j+1], df$y[j+1])
@@ -66,14 +76,15 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
   }
 
+  # Last, clean and organize the output data
   hatch_points <- res %>%
     dplyr::bind_rows() %>%
     tidyr::drop_na() %>%
-    dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2))
+    dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2) + max(df$group))
 
   if(keep_outline) {
     df %>%
-      dplyr::mutate(group = 0) %>%
+      # dplyr::mutate(group = 0) %>%
       dplyr::bind_rows(hatch_points)
   } else {
     return(hatch_points)
@@ -81,12 +92,7 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
 }
 
-# Now it seems to be working for any star!
-# star(7, m = 4.5) %>%
-#   hatch(spacing = .02, angle = 1.5, keep_outline = TRUE) %>%
-#   show(group = group)
 
-# Need to try letters next...
 
 hatch_overlay <- function(df, spacing) {
 
@@ -94,6 +100,12 @@ hatch_overlay <- function(df, spacing) {
   height <- max(df$y) - min(df$y)
   diagonal <- sqrt(width^2 + height^2)
   # rotated hatch line length==diagonal of bounding box
+
+  # Need something in here to make sure hatch lines are drawn on the spacing
+  # intervals. I.e the starting number should be divisible by the spacing.
+  # s <- .1
+  # seq(floor(1.53*(1/s))/(1/s), ceiling(2.17*(1/s))/(1/s), s)
+
 
   x_center <- min(df$x) + width/2
   y_center <- min(df$y) + height/2
@@ -138,14 +150,28 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 
   }
 
-  dplyr::bind_rows(out, .id = "line")
+  dplyr::bind_rows(out, .id = "group")
 
 }
 
-# square() %>%
-#   hatch_overlay(angle = 0, spacing = .05) %>%
-#   lines_to_waves(frequency = .05, amplitude = .02) %>%
-#   show("path", group = line)
+# d <- square() %>%
+#   hatch_overlay(spacing = .05) %>%
+#   rotate(pi*.25) %>%
+#   lines_to_waves() %>%
+#   dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
+#                                             dplyr::mutate(square(), group = 0)))
+# #
+# # d$inside <- points_in_polygons(d, dplyr::mutate(square(), group = 0))
+# #
+# # # could do this within the pipe...
+# #   # dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
+# #                                             # dplyr::mutate(square(), group = 0))) %>%
+# #   # rotate(pi*.25) %>%
+# #   # dplyr::mutate(group = 1) %>%
+# ggplot2::ggplot() +
+#   ggplot2::geom_path(data = dplyr::filter(d, inside), ggplot2::aes(x, y, group = group, color = inside)) +
+#   ggplot2::geom_path(data = square(), ggplot2::aes(x, y, group = NULL)) +
+#   ggplot2::coord_fixed()
 
 
 hatch_wave <- function(df, spacing = .1,
@@ -186,9 +212,6 @@ hatch_wave <- function(df, spacing = .1,
 
 }
 
-# square() %>%
-#   hatch_wave() %>%
-#   show("path", group = line)
 
 # hatch_overlay <- function(df, spacing) {
 #
@@ -227,39 +250,14 @@ rotate <- function(df, angle = pi/2, around = c(0, 0)) {
   # y_center <- min(df$y) + (max(df$y) - min(df$y))/2
 
   dplyr::mutate(df,
-                x = x - around[1],
-                y = y - around[2],
-                x0 = x * cos(angle) - y * sin(angle) + around[1],
-                y0 = y * cos(angle) + x * sin(angle) + around[2]) %>%
-    dplyr::select(x = x0, y = y0)
+                x0 = x - around[1],
+                y0 = y - around[2],
+                x = x0 * cos(angle) - y0 * sin(angle) + around[1],
+                y = y0 * cos(angle) + x0 * sin(angle) + around[2]) %>%
+    dplyr::select(-x0, -y0)
 }
 
 
-
-# rotatex <- function(df, angle = pi/2) {
-#
-#   w <- (max(df$x) - min(df$x))
-#   h <-( max(df$y) - min(df$y))
-#   x_center <- min(df$x) + (max(df$x) - min(df$x))/2
-#   y_center <- min(df$y) + (max(df$y) - min(df$y))/2
-#
-#   dplyr::mutate(df,
-#                 x = x - x_center,
-#                 y = y - y_center,
-#                 x0 = x * cos(angle) - y * sin(angle),
-#                 y0 = y * cos(angle) + x * sin(angle)) %>%
-#     dplyr::select(x = x0, y = y0)
-# }
-
-# odds <- function(x) {
-#   i <- 1:length(x)
-#   x[i%%2!=0]
-# }
-#
-# evens <- function(x) {
-#   i <- 1:length(x)
-#   x[i%%2==0]
-# }
 
 
 intersect <- function(poly_df, x = x, xend = xend, y = y, yend = yend, correction = FALSE, interior.only = TRUE) {

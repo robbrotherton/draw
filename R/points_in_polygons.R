@@ -8,6 +8,7 @@ points_in_polygons <- function(points, polygons) {
     x <- points$x[p]
     y <- points$y[p]
 
+    # this is a problem when there's no group col; if it doesn't exist create it
     for (i in unique(polygons$group)) {
 
       poly <- dplyr::filter(polygons, group == i)

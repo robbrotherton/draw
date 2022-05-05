@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-show <- function(df, geom = c("path", "point", "polygon", "line"), group = NULL, fixed = TRUE, ...) {
+show <- function(df, geom = c("path", "point", "polygon", "line"), group = group, fixed = TRUE, ...) {
 
   geom <- match.arg(geom)
 

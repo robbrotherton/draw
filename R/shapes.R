@@ -112,3 +112,54 @@ star <- function(points = 5, radius = 1, m = 3, k = 1) {
              y = sin(t) * r * radius)
 
 }
+
+letter <- function(letter, nseg = 4, family = "sans", face = "regular") {
+
+  # devtools::install_github("https://github.com/yixuan/fontr")
+  # sysfonts::font_families() gf <-
+  # sysfonts::font_families_google()
+
+  fontr::glyph_polygon(letter, nseg = 5, family = family, face = face) %>%
+    dplyr::mutate(group = ifelse(is.na(x), 1, 0),
+                  group = cumsum(group)) %>%
+    tidyr::drop_na()
+
+  # some letters (like "a") have an inset polygon to make the hole
+  # some letters (like "B") even have two inset polygons
+  # some letters (like "i") have two separate polygons which should both be filled
+
+  # This all works fine with the hatch() function; inset polys are excluded,
+  # because a hatch segment must cross into the letter, out into the inset, back
+  # into the letter, then out again.
+
+}
+
+letters <- function(string, nseg = 4, kerning = 0, family = "sans", face = "regular") {
+
+  letters <- strsplit(string, "")[[1]]
+  letter_dfs <- vector(mode = "list", length = length(letters))
+  prev_max_x <- 0
+
+  for(i in seq_along(letters)) {
+
+    if(letters[i]==" ") {
+      prev_max_x = prev_max_x + .2
+    } else {
+      new_letter <- fontr::glyph_polygon(letters[i], family = family, face = face, nseg = nseg) %>%
+        dplyr::mutate(x = x + prev_max_x + kerning,
+                      y = y)
+
+      # need the group thing in mutate
+
+      prev_max_x <- max(new_letter$x, na.rm = T)
+
+      letter_dfs[[i]] <- new_letter
+    }
+
+  }
+
+  dplyr::bind_rows(letter_dfs, .id = "group")
+
+}
+
+# letters("my body", nseg = 5) %>% show()
