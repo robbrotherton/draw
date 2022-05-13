@@ -158,8 +158,14 @@ letters <- function(string, nseg = 4, kerning = 0, family = "sans", face = "regu
 
   }
 
-  dplyr::bind_rows(letter_dfs, .id = "group")
+  dplyr::bind_rows(letter_dfs, .id = "letter") %>%
+    dplyr::mutate(new_group = cumsum(is.na(x))) %>%
+    dplyr::group_by(letter, new_group) %>%
+    tidyr::drop_na() %>%
+    dplyr::mutate(group = dplyr::cur_group_id())
+  # %>%
+    # tidyr::drop_na()
 
 }
 
-# letters("my body", nseg = 5) %>% show()
+# l <- letters("hatch", nseg = 5)
