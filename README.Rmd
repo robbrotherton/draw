@@ -29,9 +29,9 @@ You can install the development version of draw from [GitHub](https://github.com
 devtools::install_github("robbrotherton/draw")
 ```
 
-## Example
+## Making shapes
 
-```{r example}
+```{r shapes}
 library(draw)
 
 offsets <- data.frame(group = as.character(1:6),
@@ -53,3 +53,10 @@ show(shapes, void = TRUE)
 
 
 ```
+
+## Filling shapes
+
+```{r}
+square() |> hatch() |> show()
+```
+

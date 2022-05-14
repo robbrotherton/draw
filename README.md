@@ -20,7 +20,7 @@ You can install the development version of draw from
 devtools::install_github("robbrotherton/draw")
 ```
 
-## Example
+## Making shapes
 
 ``` r
 library(draw)
@@ -52,4 +52,12 @@ shapes <- dplyr::bind_rows(circle(),
 show(shapes, void = TRUE)
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+<img src="man/figures/README-shapes-1.png" width="100%" />
+
+## Filling shapes
+
+``` r
+square() |> hatch() |> show()
+```
+
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />

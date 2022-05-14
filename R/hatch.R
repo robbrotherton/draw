@@ -77,10 +77,15 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   }
 
   # Last, clean and organize the output data
+  # n <- nrow(res)
   hatch_points <- res |>
     dplyr::bind_rows() |>
-    tidyr::drop_na() |>
-    dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2) + max(df$group))
+    tidyr::drop_na()
+
+  n <- nrow(hatch_points)
+
+  hatch_points <- hatch_points |>
+    dplyr::mutate(group = rep(1:(n/2), each = 2) + max(df$group))
 
   if(keep_outline) {
     df |>
