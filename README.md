@@ -6,7 +6,9 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of draw is to …
+A package to generate gcode for a pen plotter. It can be used to create
+data.frames of x and y coordinates for shapes and lines, and to convert
+the data into gcode.
 
 ## Installation
 
@@ -20,8 +22,6 @@ devtools::install_github("robbrotherton/draw")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
 ``` r
 library(draw)
 #> 
@@ -32,32 +32,24 @@ library(draw)
 #> The following object is masked from 'package:methods':
 #> 
 #>     show
-## basic example code
+
+offsets <- data.frame(group = as.character(1:6),
+                      x_offset = rep(seq(1, length.out = 3, by = 1.5), 2),
+                      y_offset = rep(c(1, 2.5), each = 3))
+
+shapes <- dplyr::bind_rows(circle(),
+                           square(),
+                           star(),
+                           polygon(sides = 6),
+                           rectangle(width = 1.5, height = 1), 
+                           heart(),
+                           .id = "group") |> 
+  dplyr::left_join(offsets) |>  
+  dplyr::mutate(x = x + x_offset, 
+                y = y + y_offset)
+#> Joining, by = "group"
+
+show(shapes, void = TRUE)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+<img src="man/figures/README-example-1.png" width="100%" />

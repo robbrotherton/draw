@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-circle <- function(points = 64, radius = 1) {
+circle <- function(points = 64, radius = .5) {
 
   theta <- seq(0,2*pi, length.out = points)
 
@@ -62,7 +62,7 @@ rectangle <- function(width = 1, height = 1.5) {
 #' @export
 #'
 #' @examples
-polygon <- function(sides = 4, radius = 1) {
+polygon <- function(sides = 4, radius = .5) {
 
   theta <- seq(0,2*pi, length.out = sides + 1)
 
@@ -85,7 +85,7 @@ polygon <- function(sides = 4, radius = 1) {
 #' @examples
 #'
 #'
-heart <- function(points = 64, radius = 1) {
+heart <- function(points = 64, radius = .22) {
 
   t <- seq(0,2*pi, length.out = points)+pi*1.5
   rad <- numeric(points)
@@ -95,13 +95,13 @@ heart <- function(points = 64, radius = 1) {
   }
 
   data.frame(x = cos(t) * rad * radius,
-             y = sin(t) * rad * radius)
+             y = sin(t) * rad * radius + .36)
 
 }
 
 
 # see https://math.stackexchange.com/questions/4293250/how-to-write-a-polar-equation-for-a-five-pointed-star
-star <- function(points = 5, radius = 1, m = 3, k = 1) {
+star <- function(points = 5, radius = .5, angle = pi/10, m = 3, k = 1) {
 
   t <-  seq(0, 2 * pi, length.out = 2 * points + 1)
   nom <-  cos((2 * asin(k) + pi * m) / (2 * points))
@@ -109,7 +109,8 @@ star <- function(points = 5, radius = 1, m = 3, k = 1) {
   r <-  (nom / denom)
 
   data.frame(x = cos(t) * r * radius,
-             y = sin(t) * r * radius)
+             y = sin(t) * r * radius) |>
+    rotate(angle)
 
 }
 
@@ -119,9 +120,9 @@ letter <- function(letter, nseg = 4, family = "sans", face = "regular") {
   # sysfonts::font_families() gf <-
   # sysfonts::font_families_google()
 
-  fontr::glyph_polygon(letter, nseg = 5, family = family, face = face) %>%
+  fontr::glyph_polygon(letter, nseg = 5, family = family, face = face) |>
     dplyr::mutate(group = ifelse(is.na(x), 1, 0),
-                  group = cumsum(group)) %>%
+                  group = cumsum(group)) |>
     tidyr::drop_na()
 
   # some letters (like "a") have an inset polygon to make the hole
@@ -145,7 +146,7 @@ letters <- function(string, nseg = 4, kerning = 0, family = "sans", face = "regu
     if(letters[i]==" ") {
       prev_max_x = prev_max_x + .2
     } else {
-      new_letter <- fontr::glyph_polygon(letters[i], family = family, face = face, nseg = nseg) %>%
+      new_letter <- fontr::glyph_polygon(letters[i], family = family, face = face, nseg = nseg) |>
         dplyr::mutate(x = x + prev_max_x + kerning,
                       y = y)
 
@@ -158,14 +159,14 @@ letters <- function(string, nseg = 4, kerning = 0, family = "sans", face = "regu
 
   }
 
-  dplyr::bind_rows(letter_dfs, .id = "letter") %>%
-    dplyr::mutate(new_group = cumsum(is.na(x))) %>%
-    dplyr::group_by(letter, new_group) %>%
-    tidyr::drop_na() %>%
+  dplyr::bind_rows(letter_dfs, .id = "letter") |>
+    dplyr::mutate(new_group = cumsum(is.na(x))) |>
+    dplyr::group_by(letter, new_group) |>
+    tidyr::drop_na() |>
     dplyr::mutate(group = dplyr::cur_group_id())
   # %>%
     # tidyr::drop_na()
 
 }
 
-# l <- letters("hatch", nseg = 5)
+# letters("hatch", nseg = 5) %>% hatch(angle = pi/4, spacing = .05) %>% show()

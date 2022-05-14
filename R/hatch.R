@@ -11,7 +11,7 @@
 #' @export
 #'
 #' @examples
-#' circle() %>% hatch() %>% show()
+#' circle() |> hatch() |> show()
 hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
 
   if(!"group" %in% names(df)) {
@@ -27,8 +27,8 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   # First, create hatch segments in a bounding box with width and height equal
   # to the diagonal of the shapex, then rotate that df of hatch lines to the
   # desired angle
-  hatch_paths <- df %>%
-    hatch_overlay(spacing) %>%
+  hatch_paths <- df |>
+    hatch_overlay(spacing) |>
     rotate(angle, around = c(center_x, center_y))
 
   # Now we take the endpoints of each hatch path and check for intersections
@@ -69,21 +69,21 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
     }
 
     index <- index + 1
-    res[[index]] <- line_intersections_df %>%
-      # tidyr::drop_na() %>%
-      dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) %>%
+    res[[index]] <- line_intersections_df |>
+      # tidyr::drop_na() |>
+      dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
       dplyr::arrange(d)
 
   }
 
   # Last, clean and organize the output data
-  hatch_points <- res %>%
-    dplyr::bind_rows() %>%
-    tidyr::drop_na() %>%
+  hatch_points <- res |>
+    dplyr::bind_rows() |>
+    tidyr::drop_na() |>
     dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2) + max(df$group))
 
   if(keep_outline) {
-    df %>%
+    df |>
       dplyr::bind_rows(hatch_points)
   } else {
     return(hatch_points)
@@ -153,10 +153,10 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 
 }
 
-# d <- square() %>%
-#   hatch_overlay(spacing = .05) %>%
-#   rotate(pi*.25) %>%
-#   lines_to_waves() %>%
+# d <- square() |>
+#   hatch_overlay(spacing = .05) |>
+#   rotate(pi*.25) |>
+#   lines_to_waves() |>
 #   dplyr::mutate(inside = pointsInPolygons(data.frame(x, y),
 #                                             dplyr::mutate(square(), group = 1)))
 # #
@@ -164,9 +164,9 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 # #
 # # # could do this within the pipe...
 # #   # dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
-# #                                             # dplyr::mutate(square(), group = 0))) %>%
-# #   # rotate(pi*.25) %>%
-# #   # dplyr::mutate(group = 1) %>%
+# #                                             # dplyr::mutate(square(), group = 0))) |>
+# #   # rotate(pi*.25) |>
+# #   # dplyr::mutate(group = 1) |>
 # ggplot2::ggplot() +
 #   ggplot2::geom_path(data = d, ggplot2::aes(x, y, group = group, color = inside)) +
 #   ggplot2::geom_path(data = square(), ggplot2::aes(x, y, group = NULL)) +
@@ -182,8 +182,8 @@ hatch_wave <- function(df, spacing = .1,
 
   # First create hatch segments in a bounding box with width and height equal to
   # the diagonal of the shape
-  hatch_paths <- hatch_overlay(df, spacing) %>%
-    lines_to_waves(frequency, amplitude) %>%
+  hatch_paths <- hatch_overlay(df, spacing) |>
+    lines_to_waves(frequency, amplitude) |>
     rotate(angle, center_x, center_y)
 
   # Now instead of taking the endpoints of each hatch path and checking for
@@ -194,14 +194,14 @@ hatch_wave <- function(df, spacing = .1,
 
   # # Want this to return a data.frame
   #
-  # hatch_points <- res %>%
-  #   dplyr::bind_rows() %>%
-  #   tidyr::drop_na() %>%
+  # hatch_points <- res |>
+  #   dplyr::bind_rows() |>
+  #   tidyr::drop_na() |>
   #   dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2))
   #
   # if(keep_outline) {
-  #   df %>%
-  #     dplyr::mutate(group = 0) %>%
+  #   df |>
+  #     dplyr::mutate(group = 0) |>
   #     dplyr::bind_rows(hatch_points)
   # } else {
   #   return(hatch_points)
@@ -223,7 +223,7 @@ rotate <- function(df, angle = pi/2, around = c(0, 0)) {
                 x0 = x - around[1],
                 y0 = y - around[2],
                 x = x0 * cos(angle) - y0 * sin(angle) + around[1],
-                y = y0 * cos(angle) + x0 * sin(angle) + around[2]) %>%
+                y = y0 * cos(angle) + x0 * sin(angle) + around[2]) |>
     dplyr::select(-x0, -y0)
 }
 
@@ -234,17 +234,17 @@ rotate <- function(df, angle = pi/2, around = c(0, 0)) {
 # }
 
 segments_to_paths <- function(df) {
-  df %>%
-    dplyr::filter(!is.na(x) & !is.na(xend)) %>%
-    # dplyr::mutate(group = 1:dplyr::n()) %>%
-    tibble::rowid_to_column("row") %>%
+  df |>
+    dplyr::filter(!is.na(x) & !is.na(xend)) |>
+    # dplyr::mutate(group = 1:dplyr::n()) |>
+    tibble::rowid_to_column("row") |>
     dplyr::mutate(x_ =    ifelse(row %% 2 != 0, x,    xend),
                   xend_ = ifelse(row %% 2 != 0, xend, x),
                   y_ =    ifelse(row %% 2 != 0, y,    yend),
-                  yend_ = ifelse(row %% 2 != 0, yend, y)) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(x = list(c(x_, xend_)), y = list(c(y_,yend_))) %>%
-    tidyr::unnest(cols = c(x, y)) %>%
+                  yend_ = ifelse(row %% 2 != 0, yend, y)) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(x = list(c(x_, xend_)), y = list(c(y_,yend_))) |>
+    tidyr::unnest(cols = c(x, y)) |>
     dplyr::select(x, y, group = row)
 }
 
@@ -253,7 +253,7 @@ inset_fill <- function(df, spacing = .1, single_line = FALSE) {
 
   data <- purrr::map_df(.x = seq(1, to = 0+spacing, by = -spacing),
                         .f = ~df * .x,
-                        .id = "group") %>%
+                        .id = "group") |>
     dplyr::mutate(group = as.numeric(group))
 
   if (single_line) {
