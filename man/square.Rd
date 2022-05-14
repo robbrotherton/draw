@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapes.R
 \name{square}
 \alias{square}
-\title{Title}
+\title{Draw a square}
 \usage{
 square(side = 1)
 }
@@ -13,5 +13,13 @@ square(side = 1)
 
 }
 \description{
-Title
+Draw a square
 }
+\seealso{
+Other shapes: 
+\code{\link{circle}()},
+\code{\link{heart}()},
+\code{\link{polygon}()},
+\code{\link{rectangle}()}
+}
+\concept{shapes}

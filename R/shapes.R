@@ -1,12 +1,15 @@
-#' Title
+#' Draw a circle
 #'
-#' @param points
-#' @param radius
+#' @family shapes
 #'
-#' @return
+#' @param points The number of points to make around the circumference of the circle
+#' @param radius The radius of the circle
+#'
+#' @return A data.frame of x and y coordinates
 #' @export
 #'
 #' @examples
+#' circle() |> show()
 circle <- function(points = 64, radius = .5) {
 
   theta <- seq(0,2*pi, length.out = points)
@@ -17,7 +20,9 @@ circle <- function(points = 64, radius = .5) {
 }
 
 
-#' Title
+#' Draw a square
+#'
+#' @family shapes
 #'
 #' @param side
 #'
@@ -34,7 +39,9 @@ square <- function(side = 1) {
 
 }
 
-#' Title
+#' Draw a rectangle
+#'
+#' @family shapes
 #'
 #' @param width
 #' @param height
@@ -53,7 +60,9 @@ rectangle <- function(width = 1, height = 1.5) {
 
 }
 
-#' Make an n-sided regular polygon
+#' Draw an n-sided regular polygon
+#'
+#' @family shapes
 #'
 #' @param sides
 #' @param radius
@@ -74,7 +83,9 @@ polygon <- function(sides = 4, radius = .5) {
 }
 
 
-#' Make a Heart
+#' Draw a Heart
+#'
+#' @family shapes
 #'
 #' @param points
 #' @param radius

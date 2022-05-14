@@ -2,9 +2,9 @@
 % Please edit documentation in R/shapes.R
 \name{polygon}
 \alias{polygon}
-\title{Make an n-sided regular polygon}
+\title{Draw an n-sided regular polygon}
 \usage{
-polygon(sides = 4, radius = 1)
+polygon(sides = 4, radius = 0.5)
 }
 \arguments{
 \item{radius}{}
@@ -13,5 +13,13 @@ polygon(sides = 4, radius = 1)
 
 }
 \description{
-Make an n-sided regular polygon
+Draw an n-sided regular polygon
 }
+\seealso{
+Other shapes: 
+\code{\link{circle}()},
+\code{\link{heart}()},
+\code{\link{rectangle}()},
+\code{\link{square}()}
+}
+\concept{shapes}

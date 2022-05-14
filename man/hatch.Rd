@@ -25,5 +25,5 @@ A data.frame
 Hatch fill a polygon
 }
 \examples{
-circle() \%>\% hatch() \%>\% show()
+circle() |> hatch() |> show()
 }

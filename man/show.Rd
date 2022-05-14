@@ -4,7 +4,14 @@
 \alias{show}
 \title{Title}
 \usage{
-show(df, geom = c("path", "point", "polygon", "line"), fixed = TRUE, ...)
+show(
+  df,
+  geom = c("path", "point", "polygon", "line"),
+  group = group,
+  fixed = TRUE,
+  void = FALSE,
+  ...
+)
 }
 \arguments{
 \item{geom}{}
@@ -14,4 +21,7 @@ show(df, geom = c("path", "point", "polygon", "line"), fixed = TRUE, ...)
 }
 \description{
 Title
+}
+\examples{
+square() |> show(group = NULL)
 }

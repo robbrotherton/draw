@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapes.R
 \name{rectangle}
 \alias{rectangle}
-\title{Title}
+\title{Draw a rectangle}
 \usage{
 rectangle(width = 1, height = 1.5)
 }
@@ -13,5 +13,13 @@ rectangle(width = 1, height = 1.5)
 
 }
 \description{
-Title
+Draw a rectangle
 }
+\seealso{
+Other shapes: 
+\code{\link{circle}()},
+\code{\link{heart}()},
+\code{\link{polygon}()},
+\code{\link{square}()}
+}
+\concept{shapes}

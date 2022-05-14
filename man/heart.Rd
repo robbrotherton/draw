@@ -2,9 +2,9 @@
 % Please edit documentation in R/shapes.R
 \name{heart}
 \alias{heart}
-\title{Make a Heart}
+\title{Draw a Heart}
 \usage{
-heart(points = 64, radius = 1)
+heart(points = 64, radius = 0.22)
 }
 \arguments{
 \item{radius}{}
@@ -13,9 +13,17 @@ heart(points = 64, radius = 1)
 
 }
 \description{
-Make a Heart
+Draw a Heart
 }
 \examples{
 
 
 }
+\seealso{
+Other shapes: 
+\code{\link{circle}()},
+\code{\link{polygon}()},
+\code{\link{rectangle}()},
+\code{\link{square}()}
+}
+\concept{shapes}

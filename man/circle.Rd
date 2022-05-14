@@ -2,16 +2,29 @@
 % Please edit documentation in R/shapes.R
 \name{circle}
 \alias{circle}
-\title{Title}
+\title{Draw a circle}
 \usage{
-circle(points = 64, radius = 1)
+circle(points = 64, radius = 0.5)
 }
 \arguments{
-\item{radius}{}
+\item{points}{The number of points to make around the circumference of the circle}
+
+\item{radius}{The radius of the circle}
 }
 \value{
-
+A data.frame of x and y coordinates
 }
 \description{
-Title
+Draw a circle
 }
+\examples{
+circle() |> show()
+}
+\seealso{
+Other shapes: 
+\code{\link{heart}()},
+\code{\link{polygon}()},
+\code{\link{rectangle}()},
+\code{\link{square}()}
+}
+\concept{shapes}
