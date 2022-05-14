@@ -12,6 +12,10 @@ show <- function(df, geom = c("path", "point", "polygon", "line"), group = group
 
   geom <- match.arg(geom)
 
+  if(!"group" %in% names(df)) {
+    df$group <- 0
+  }
+
   geom <- switch(geom,
                  point   = ggplot2::geom_point(...),
                  path    = ggplot2::geom_path(...),

@@ -29,7 +29,7 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   # desired angle
   hatch_paths <- df |>
     hatch_overlay(spacing) |>
-    rotate(angle, around = c(center_x, center_y))
+    rotate(degrees_to_radians(angle), around = c(center_x, center_y))
 
   # Now we take the endpoints of each hatch path and check for intersections
   # with each segment of the polygon
@@ -68,13 +68,21 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
     }
 
+    line_intersections_df <- line_intersections_df |>
+      # dplyr::distinct() |>
+      tidyr::drop_na()
+
     index <- index + 1
-    res[[index]] <- line_intersections_df |>
-      # tidyr::drop_na() |>
-      dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
-      dplyr::arrange(d)
+
+    if(nrow(line_intersections_df) > 1) {
+      res[[index]] <- line_intersections_df |>
+        dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
+        dplyr::arrange(d)
+    }
 
   }
+
+  # return(res)
 
   # Last, clean and organize the output data
   # n <- nrow(res)
@@ -105,26 +113,48 @@ hatch_overlay <- function(df, spacing) {
   diagonal <- sqrt(width^2 + height^2)
   # rotated hatch line length==diagonal of bounding box
 
+  half_diagonal <- ceiling_spacing(diagonal/2, spacing)
+  print(half_diagonal)
   # Need something in here to make sure hatch lines are drawn on the spacing
   # intervals. I.e the starting number should be divisible by the spacing.
   # s <- .1
   # seq(floor(1.53*(1/s))/(1/s), ceiling(2.17*(1/s))/(1/s), s)
 
-
   x_center <- min(df$x) + width/2
   y_center <- min(df$y) + height/2
 
-  xmin <- x_center - diagonal/2
-  xmax <- xmin + diagonal
+  xmin <- x_center - half_diagonal
+  xmax <- x_center + half_diagonal
 
-  y <- seq(from = y_center - diagonal/2,
-           to =   y_center + diagonal/2,
+
+  ymin <- y_center - half_diagonal
+  ymax <- y_center + half_diagonal
+#
+#   y <- seq(from = ymin,
+#            to =   ymax,
+#            by = spacing)
+
+  y <- seq(from = ymin, #diagonal/2,
+           to =   ymax, #diagonal/2,
            by = spacing)
 
   data.frame(y = rep(y, each = 2),
              x = c(xmin, xmax))
 
 }
+
+floor_spacing <- function(x, spacing) {
+  floor(x*(1/spacing))/(1/spacing)
+}
+
+ceiling_spacing <- function(x, spacing) {
+  ceiling(x*(1/spacing))/(1/spacing)
+}
+
+degrees_to_radians <- function(d) {
+  d * pi/180
+}
+
 
 
 line_to_wave <- function(P1, P2, points = 50, frequency = .1, amplitude = .1) {
@@ -217,7 +247,7 @@ hatch_wave <- function(df, spacing = .1,
 }
 
 
-rotate <- function(df, angle = pi/2, around = c(0, 0)) {
+rotate <- function(df, angle, around = c(0, 0)) {
 
   # w <- (max(df$x) - min(df$x))
   # h <-( max(df$y) - min(df$y))
