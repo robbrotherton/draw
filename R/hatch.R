@@ -32,8 +32,6 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
     rotate(angle, around = c(center_x, center_y)) |>
     clip_hatch_lines(df)
 
-  # return(hatch_paths)
-
   # Clean and organize the output data
   hatch_points <- hatch_paths |>
     dplyr::bind_rows() |>
@@ -41,8 +39,7 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
     dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2) + max(df$group))
 
   if(keep_outline) {
-    df |>
-      dplyr::bind_rows(hatch_points)
+    dplyr::bind_rows(df, hatch_points)
   } else {
     hatch_points
   }
@@ -323,7 +320,7 @@ segments_to_paths <- function(df) {
 }
 
 
-inset_fill <- function(df, spacing = .1, single_line = FALSE) {
+fill_inset <- function(df, spacing = .1, single_line = TRUE) {
 
   data <- purrr::map_df(.x = seq(1, to = 0+spacing, by = -spacing),
                         .f = ~df * .x,
@@ -356,6 +353,8 @@ inset_fill <- function(df, spacing = .1, single_line = FALSE) {
 
       data$x[n*i] <- int$x
       data$y[n*i] <- int$y
+
+      data$group <- 1
 
     }
 
