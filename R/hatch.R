@@ -53,12 +53,6 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 # star() |> hatch(spacing = .01, angle = pi/5) |> show()
 # make sure no points outside star, middle line bisecting star is present
 
-# square() |> hatch(angle = pi*.25) |> show()
-# make sure corner-to-corner line is present
-
-# square() |> hatch(angle = pi*.5) |> show()
-# edge lines should not be present
-
 # rectangle() |> hatch(spacing = .1, angle = pi/2) |> show()
 
 # letters("MABEL") |> hatch(spacing = .01, angle = pi*.5) |> show()

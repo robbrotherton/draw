@@ -8,10 +8,12 @@ Maintainer: Rob Brotherton <rbrother@barnard.edu>
 Description: Some tools to draw (and show) basic shapes.
 License: GPL (>= 2)
 Imports: 
-    magrittr,
-    Rcpp (>= 1.0.8)
-LinkingTo: Rcpp
+    dplyr,
+    fontr,
+    ggplot2,
+    purrr,
+    Rcpp (>= 1.0.8),
+    tibble,
+    tidyr
 RoxygenNote: 7.1.2
-Suggests: 
-    testthat (>= 3.0.0)
 Config/testthat/edition: 3
