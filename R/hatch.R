@@ -29,77 +29,21 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   # desired angle
   hatch_paths <- df |>
     hatch_overlay(spacing) |>
-    rotate(degrees_to_radians(angle), around = c(center_x, center_y))
+    rotate(degrees_to_radians(angle), around = c(center_x, center_y)) |>
+    clip_hatch_lines(df)
 
-  # Now we take the endpoints of each hatch path and check for intersections
-  # with each segment of the polygon
-  h_segs <- nrow(hatch_paths)
-  p_segs <- nrow(df) - 1
-
-  # We'll have a data.frame for each line, then bind_rows() at the end
-  res <- vector(mode = "list", length = h_segs/2)
-  index <- 0
-
-  for(i in seq(from = 1, to = h_segs, by = 2)) {
-
-    P1 <- c(hatch_paths$x[i]   , hatch_paths$y[i])
-    P2 <- c(hatch_paths$x[i+1] , hatch_paths$y[i+1])
-
-    # The solution is to save all intersections for a single line together, then
-    # arrange them by distance from the origin of the hatch line. This should
-    # generalize to any shape and makes the order of the polygon segments
-    # irrelevant.
-
-    line_intersections_df <- data.frame(x = vector("numeric", length = p_segs),
-                                        y = vector("numeric", length = p_segs))
-
-    for(j in 1:p_segs) {
-
-      if(df$group[j+1] != df$group[j]) {
-        # Need to skip rows where the next row is from a different polygon
-        line_intersections_df[j,] <- data.frame(x = NA, y = NA)
-        next
-      }
-
-      P3 <- c(df$x[j]  , df$y[j])
-      P4 <- c(df$x[j+1], df$y[j+1])
-
-      line_intersections_df[j,] <- line.line.intersection(P1, P2, P3, P4)
-
-    }
-
-    line_intersections_df <- line_intersections_df |>
-      # dplyr::distinct() |>
-      tidyr::drop_na()
-
-    index <- index + 1
-
-    if(nrow(line_intersections_df) > 1) {
-      res[[index]] <- line_intersections_df |>
-        dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
-        dplyr::arrange(d)
-    }
-
-  }
-
-  # return(res)
-
-  # Last, clean and organize the output data
+  # Clean and organize the output data
   # n <- nrow(res)
-  hatch_points <- res |>
+  hatch_points <- hatch_paths |>
     dplyr::bind_rows() |>
-    tidyr::drop_na()
-
-  n <- nrow(hatch_points)
-
-  hatch_points <- hatch_points |>
-    dplyr::mutate(group = rep(1:(n/2), each = 2) + max(df$group))
+    tidyr::drop_na() |>
+    dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2) + max(df$group))
 
   if(keep_outline) {
     df |>
       dplyr::bind_rows(hatch_points)
   } else {
-    return(hatch_points)
+    hatch_points
   }
 
 }
@@ -114,7 +58,7 @@ hatch_overlay <- function(df, spacing) {
   # rotated hatch line length==diagonal of bounding box
 
   half_diagonal <- ceiling_spacing(diagonal/2, spacing)
-  print(half_diagonal)
+
   # Need something in here to make sure hatch lines are drawn on the spacing
   # intervals. I.e the starting number should be divisible by the spacing.
   # s <- .1
@@ -142,6 +86,65 @@ hatch_overlay <- function(df, spacing) {
              x = c(xmin, xmax))
 
 }
+
+clip_hatch_lines <- function(hatch_df, polygon_df) {
+
+  # Check each hatch segment  for intersections with each segment of the polygon
+  h_segs <- nrow(hatch_df)
+  p_segs <- nrow(polygon_df) - 1
+
+  # We'll have a data.frame for each line, then bind_rows() at the end
+  res <- vector(mode = "list", length = h_segs/2)
+  index <- 0
+
+  for(i in seq(from = 1, to = h_segs, by = 2)) {
+
+    P1 <- c(hatch_df$x[i]   , hatch_df$y[i])
+    P2 <- c(hatch_df$x[i+1] , hatch_df$y[i+1])
+
+    # The solution is to save all intersections for a single line together, then
+    # arrange them by distance from the origin of the hatch line. This should
+    # generalize to any shape and makes the order of the polygon segments
+    # irrelevant.
+
+    line_intersections_df <- data.frame(x = vector("numeric", length = p_segs),
+                                        y = vector("numeric", length = p_segs))
+
+    for(j in 1:p_segs) {
+
+      if(polygon_df$group[j+1] != polygon_df$group[j]) {
+        # Need to skip rows where the next row is from a different polygon
+        line_intersections_df[j,] <- data.frame(x = NA, y = NA)
+        next
+      }
+
+      P3 <- c(polygon_df$x[j]  , polygon_df$y[j])
+      P4 <- c(polygon_df$x[j+1], polygon_df$y[j+1])
+
+      line_intersections_df[j,] <- line.line.intersection(P1, P2, P3, P4)
+
+    }
+
+    line_intersections_df <- line_intersections_df |>
+      dplyr::distinct() |>
+      tidyr::drop_na()
+
+    index <- index + 1
+
+    if(nrow(line_intersections_df) > 1) {
+      res[[index]] <- line_intersections_df |>
+        dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
+        dplyr::arrange(d)
+    }
+
+  }
+
+  res
+
+}
+
+
+
 
 floor_spacing <- function(x, spacing) {
   floor(x*(1/spacing))/(1/spacing)
