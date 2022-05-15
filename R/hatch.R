@@ -25,15 +25,16 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
   center_y <- min(df$y) + height/2
 
   # First, create hatch segments in a bounding box with width and height equal
-  # to the diagonal of the shapex, then rotate that df of hatch lines to the
+  # to the diagonal of the shape, then rotate that df of hatch lines to the
   # desired angle
   hatch_paths <- df |>
     hatch_overlay(spacing) |>
-    rotate(degrees_to_radians(angle), around = c(center_x, center_y)) |>
+    rotate(angle, around = c(center_x, center_y)) |>
     clip_hatch_lines(df)
 
+  # return(hatch_paths)
+
   # Clean and organize the output data
-  # n <- nrow(res)
   hatch_points <- hatch_paths |>
     dplyr::bind_rows() |>
     tidyr::drop_na() |>
@@ -48,6 +49,22 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
 }
 
+# important tests to add:
+# star() |> hatch(angle = pi*.5, keep_outline = TRUE) |> show()
+# make sure no points outside star, middle line bisecting star is present
+
+# star() |> hatch(spacing = .01, angle = pi/5) |> show()
+# make sure no points outside star, middle line bisecting star is present
+
+# square() |> hatch(angle = pi*.25) |> show()
+# make sure corner-to-corner line is present
+
+# square() |> hatch(angle = pi*.5) |> show()
+# edge lines should not be present
+
+# rectangle() |> hatch(spacing = .1, angle = pi/2) |> show()
+
+# letters("MABEL") |> hatch(spacing = .01, angle = pi*.5) |> show()
 
 
 hatch_overlay <- function(df, spacing) {
@@ -121,7 +138,7 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
       P3 <- c(polygon_df$x[j]  , polygon_df$y[j])
       P4 <- c(polygon_df$x[j+1], polygon_df$y[j+1])
 
-      line_intersections_df[j,] <- line.line.intersection(P1, P2, P3, P4)
+      line_intersections_df[j,] <- lineLineIntersection(P1, P2, P3, P4)
 
     }
 
@@ -131,10 +148,24 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
 
     index <- index + 1
 
-    if(nrow(line_intersections_df) > 1) {
+    # Need some checks here before adding a result to the list.
+    # Is there just a single point? Can happen if a hatch line clips one corner
+    # Or 3 points? Or any odd number?
+    # Does the hatch segment duplicate a segment of the polygon?
+
+    if(nrow(line_intersections_df) %% 2 == 0) {
+
       res[[index]] <- line_intersections_df |>
-        dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2) |>
-        dplyr::arrange(d)
+        dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2)
+
+      if(index %% 2 == 0) {
+        res[[index]] <- res[[index]] |>
+          dplyr::arrange(-d)
+      } else {
+        res[[index]] <- res[[index]] |>
+          dplyr::arrange(d)
+      }
+
     }
 
   }
@@ -142,8 +173,13 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
   res
 
 }
+# sig.
+# waldo::compare(.0001, 0, tolerance = .0001)
+# expect_equal(1e-1, 0, tolerance = e-1)
+# 1e-324==0
 
-
+# lineLineIntersection(c(-.5, -1), c(-.5, 1),
+#                      c(-.5, -.5), c(-.5, .5))
 
 
 floor_spacing <- function(x, spacing) {
