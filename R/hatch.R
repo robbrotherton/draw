@@ -57,6 +57,12 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 
 # letters("MABEL") |> hatch(spacing = .01, angle = pi*.5) |> show()
 
+# hatch_multi
+# purrr::map_df(c(pi*.4, pi*.6), ~square() |>
+# hatch(angle = .x, keep_outline = FALSE), .id = "unit") |>
+#   dplyr::group_by(unit, group) |>
+#   dplyr::mutate(group = dplyr::cur_group_id()) |>
+#   show()
 
 hatch_overlay <- function(df, spacing) {
 
@@ -91,7 +97,7 @@ hatch_overlay <- function(df, spacing) {
            by = spacing)
 
   data.frame(y = rep(y, each = 2),
-             x = c(xmin, xmax))
+             x = c(xmin, xmax)) + 1e-3
 
 }
 

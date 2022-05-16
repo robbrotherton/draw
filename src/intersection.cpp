@@ -39,8 +39,8 @@ DataFrame lineLineIntersection(NumericVector P1,
   double lambda1 = -((x-P1[0])*dx1 + (y-P1[1])*-dy1)/(dx1 * dx1 + dy1 * dy1);
   double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
 
-  if (((lambda1 >= 0) & (lambda1 <= 1) &
-       (lambda2 >= 0) & (lambda2 <= 1))) {
+  if (((lambda1 > 0) & (lambda1 < 1) &
+       (lambda2 > 0) & (lambda2 < 1))) {
 
     return DataFrame::create(_["x"]= x, _["y"]= y);
 
