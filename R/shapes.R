@@ -12,7 +12,7 @@
 #' circle() |> show()
 circle <- function(points = 64, radius = .5) {
 
-  theta <- seq(0,2*pi, length.out = points) + 1e-3
+  theta <- seq(0,2*pi, length.out = points) # + 1e-3
 
   data.frame(x = cos(theta) * radius,
              y = sin(theta) * radius)

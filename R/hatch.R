@@ -97,7 +97,7 @@ hatch_overlay <- function(df, spacing) {
            by = spacing)
 
   data.frame(y = rep(y, each = 2),
-             x = c(xmin, xmax)) + 1e-3
+             x = c(xmin, xmax)) # + 1e-3
 
 }
 
@@ -283,20 +283,7 @@ hatch_wave <- function(df, spacing = .1,
 }
 
 
-rotate <- function(df, angle, around = c(0, 0)) {
 
-  # w <- (max(df$x) - min(df$x))
-  # h <-( max(df$y) - min(df$y))
-  # x_center <- min(df$x) + (max(df$x) - min(df$x))/2
-  # y_center <- min(df$y) + (max(df$y) - min(df$y))/2
-
-  dplyr::mutate(df,
-                x0 = x - around[1],
-                y0 = y - around[2],
-                x = x0 * cos(angle) - y0 * sin(angle) + around[1],
-                y = y0 * cos(angle) + x0 * sin(angle) + around[2]) |>
-    dplyr::select(-x0, -y0)
-}
 
 
 
