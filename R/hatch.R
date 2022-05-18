@@ -220,7 +220,8 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 
   }
 
-  dplyr::bind_rows(out, .id = "group")
+  dplyr::bind_rows(out, .id = "group") |>
+    dplyr::mutate(group = as.numeric(group))
 
 }
 
@@ -243,6 +244,15 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 #   ggplot2::geom_path(data = square(), ggplot2::aes(x, y, group = NULL)) +
 #   ggplot2::coord_fixed()
 
+# square() |>
+#   hatch_overlay(.1) |>
+#   lines_to_waves(f = .1, a = .1) |>
+#   rotate(0) |>
+#   show()
+hatch_wave(dplyr::mutate(square(), group = 1)) |>
+  ggplot2::ggplot(ggplot2::aes(x, y, color = inside, group = group)) +
+  ggplot2::geom_path() +
+  ggplot2::coord_fixed()
 
 hatch_wave <- function(df, spacing = .1,
                        angle = 0,
@@ -253,32 +263,30 @@ hatch_wave <- function(df, spacing = .1,
 
   # First create hatch segments in a bounding box with width and height equal to
   # the diagonal of the shape
-  hatch_paths <- hatch_overlay(df, spacing) |>
-    lines_to_waves(frequency, amplitude) |>
-    rotate(angle, center_x, center_y)
+  hatch_paths <- df |>
+    hatch_overlay(spacing) |>
+    lines_to_waves(frequency = frequency, amplitude = amplitude) |>
+    rotate(angle)
 
   # Now instead of taking the endpoints of each hatch path and checking for
   # intersections with each segment of the polygon, we need to take each point
   # along the line and check if it's inside or outside of the polygon
 
-  # hatch_paths$inside <- points_in_polygons(hatch_paths, df)
+  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
 
-  # # Want this to return a data.frame
-  #
-  # hatch_points <- res |>
-  #   dplyr::bind_rows() |>
-  #   tidyr::drop_na() |>
-  #   dplyr::mutate(group = rep(1:(nrow(.)/2), each = 2))
-  #
-  # if(keep_outline) {
-  #   df |>
-  #     dplyr::mutate(group = 0) |>
-  #     dplyr::bind_rows(hatch_points)
-  # } else {
-  #   return(hatch_points)
-  # }
+  # Need to do two things here:
+  # 1: clean intersections between waves and poly boundary
+  # 2: revise line groups, increment group when a line passes out and back into polygon
 
-  hatch_paths
+  hatch_paths <- dplyr::filter(hatch_paths, inside)
+
+  if(keep_outline) {
+    df |>
+      dplyr::mutate(group = 0) |>
+      dplyr::bind_rows(hatch_paths)
+  } else {
+    return(hatch_paths)
+  }
 
 }
 
