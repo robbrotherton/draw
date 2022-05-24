@@ -249,15 +249,13 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 #   lines_to_waves(f = .1, a = .1) |>
 #   rotate(0) |>
 #   show()
-hatch_wave(dplyr::mutate(square(), group = 1)) |>
-  ggplot2::ggplot(ggplot2::aes(x, y, color = inside, group = group)) +
-  ggplot2::geom_path() +
-  ggplot2::coord_fixed()
+
 
 hatch_wave <- function(df, spacing = .1,
                        angle = 0,
                        frequency = .1,
                        amplitude = .1,
+                       neat_edges = FALSE,
                        keep_outline = TRUE,
                        single_line = FALSE) {
 
@@ -273,6 +271,22 @@ hatch_wave <- function(df, spacing = .1,
   # along the line and check if it's inside or outside of the polygon
 
   hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
+
+  # Need to update group ids here, since a line might pass out of the polygon
+  # and then come back in, resulting in two separate sections
+  hatch_paths <- hatch_paths |>
+    dplyr::rename(line = group) |>
+    dplyr::group_by(line) |>
+    dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::mutate(group = dplyr::cur_group_id())
+  # return(hatch_paths)
+
+  if(neat_edges) {
+    hatch_paths <- tidy_edges(hatch_paths, df) |>
+      dplyr::group_by(line, subsection) |>
+      dplyr::mutate(group = dplyr::cur_group_id())
+  }
 
   # Need to do two things here:
   # 1: clean intersections between waves and poly boundary
@@ -293,6 +307,102 @@ hatch_wave <- function(df, spacing = .1,
 
 
 
+tidy_edges <- function(hatch_df, poly_df) {
+
+  z <- hatch_df |>
+    tibble::rowid_to_column("point_id")
+
+  # Drop any lines/sections that are entierly outside of the polygon
+  z2 <- z |>
+    dplyr::group_by(subsection) |>
+    dplyr::filter(sum(inside) > 0)
+
+  # Need to tag points as being first of last of their subsection
+  first_points <- z2 |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::slice(1)
+
+  last_points <- z2 |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::slice(dplyr::n())
+
+  # Now can compute new points which intersect with edges of polygon
+
+  # deal with first points----
+  for(i in seq_len(nrow(first_points))) {
+    this_point_id <- first_points$point_id[i]
+    this_point_subsection <- first_points$subsection[i]
+    this_point_x <- first_points$x[i]
+    this_point_y <- first_points$y[i]
+
+    prev_point_id <- z$point_id[z$point_id==(this_point_id - 1)]
+    prev_point_x <- z$x[z$point_id==prev_point_id]
+    prev_point_y <- z$y[z$point_id==prev_point_id]
+
+    P1 <- c(this_point_x, this_point_y)
+    P2 <- c(prev_point_x, prev_point_y)
+
+    for(j in seq_len(nrow(poly_df) - 1)) {
+      P3 <- c(poly_df$x[j],   poly_df$y[j])
+      P4 <- c(poly_df$x[j+1], poly_df$y[j+1])
+
+      intersection <- lineLineIntersection(P1, P2, P3, P4)
+
+      # IF there is an intersection, stop checking
+      if(!any(is.na(intersection))) break
+
+    }
+
+    # intersections[[i]] <- intersection
+    z$x[z$point_id==prev_point_id] <- intersection$x[1]
+    z$y[z$point_id==prev_point_id] <- intersection$y[1]
+    z$subsection[z$point_id==prev_point_id] <- this_point_subsection
+    z$inside[z$point_id==prev_point_id] <- TRUE
+
+  }
+
+  # deal with last points ----
+  for(i in seq_len(nrow(last_points))) {
+    this_point_id         <- last_points$point_id[i]
+    this_point_subsection <- last_points$subsection[i]
+    this_point_x          <- last_points$x[i]
+    this_point_y          <- last_points$y[i]
+
+    prev_point_id <- z$point_id[z$point_id==(this_point_id + 1)]
+    prev_point_x <- z$x[z$point_id==prev_point_id]
+    prev_point_y <- z$y[z$point_id==prev_point_id]
+
+    P1 <- c(this_point_x, this_point_y)
+    P2 <- c(prev_point_x, prev_point_y)
+
+    for(j in seq_len(nrow(poly_df) - 1)) {
+      P3 <- c(poly_df$x[j],   poly_df$y[j])
+      P4 <- c(poly_df$x[j+1], poly_df$y[j+1])
+
+      intersection <- lineLineIntersection(P1, P2, P3, P4)
+
+      # IF there is an intersection, stop checking
+      if(!any(is.na(intersection))) break
+
+    }
+
+    # intersections[[i]] <- intersection
+    z$x[z$point_id==prev_point_id] <- intersection$x[1]
+    z$y[z$point_id==prev_point_id] <- intersection$y[1]
+    z$subsection[z$point_id==prev_point_id] <- this_point_subsection
+    z$inside[z$point_id==prev_point_id] <- TRUE
+
+  }
+
+  z
+
+}
+
+
+# hatch_wave(dplyr::mutate(square(), group = 1)) |>
+#   ggplot2::ggplot(ggplot2::aes(x, y, color = group, group = group)) +
+#   ggplot2::geom_path() +
+#   ggplot2::coord_fixed()
 
 
 # paths_to_segments <- function(df) {
