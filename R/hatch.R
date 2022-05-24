@@ -247,6 +247,10 @@ hatch_wave <- function(df, spacing = .1,
                        keep_outline = TRUE,
                        single_line = FALSE) {
 
+  if(!"group" %in% names(df)) {
+    df$group <- 1
+  }
+
   # First create hatch segments in a bounding box with width and height equal to
   # the diagonal of the shape
   hatch_paths <- df |>
@@ -284,7 +288,7 @@ hatch_wave <- function(df, spacing = .1,
 
   if(keep_outline) {
     df |>
-      dplyr::mutate(group = 0) |>
+      # dplyr::mutate(group = 0) |>
       dplyr::bind_rows(hatch_paths)
   } else {
     return(hatch_paths)
