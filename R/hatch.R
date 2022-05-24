@@ -179,18 +179,6 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
 #                      c(-.5, -.5), c(-.5, .5))
 
 
-floor_spacing <- function(x, spacing) {
-  floor(x*(1/spacing))/(1/spacing)
-}
-
-ceiling_spacing <- function(x, spacing) {
-  ceiling(x*(1/spacing))/(1/spacing)
-}
-
-degrees_to_radians <- function(d) {
-  d * pi/180
-}
-
 
 
 line_to_wave <- function(P1, P2, points = 50, frequency = .1, amplitude = .1) {
@@ -409,20 +397,7 @@ tidy_edges <- function(hatch_df, poly_df) {
 #
 # }
 
-segments_to_paths <- function(df) {
-  df |>
-    dplyr::filter(!is.na(x) & !is.na(xend)) |>
-    # dplyr::mutate(group = 1:dplyr::n()) |>
-    tibble::rowid_to_column("row") |>
-    dplyr::mutate(x_ =    ifelse(row %% 2 != 0, x,    xend),
-                  xend_ = ifelse(row %% 2 != 0, xend, x),
-                  y_ =    ifelse(row %% 2 != 0, y,    yend),
-                  yend_ = ifelse(row %% 2 != 0, yend, y)) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(x = list(c(x_, xend_)), y = list(c(y_,yend_))) |>
-    tidyr::unnest(cols = c(x, y)) |>
-    dplyr::select(x, y, group = row)
-}
+
 
 
 fill_inset <- function(df, spacing = .1, single_line = TRUE) {

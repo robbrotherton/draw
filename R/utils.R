@@ -26,15 +26,16 @@ arrange_grid <- function(df, nrow = NULL, ncol = NULL, spacing = 1) {
 #   dplyr::mutate(group = as.numeric(group)) |>
 #   hatch(angle = pi/4) |>
 #   show()
+# as.logical(as.integer(runif(1)+.5))
 #
 # purrr::map_df(1:16, ~square(), .id = "group") |>
-#   arrange_grid(4, 4, 1.1) |>
+#   arrange_grid(4, 4, 1) |>
 #   dplyr::mutate(group = as.numeric(group)) |>
 #   dplyr::group_split(group) |>
-#   purrr::map2_df(.y = runif(16, max = pi), ~hatch(.x, angle = .y), .id = "unit") |>
+#   purrr::map2_df(.y = runif(16, max = pi), ~if(as.logical(as.integer(runif(1)+.5))) hatch(.x, angle = .y) else .x, .id = "unit") |>
 #   dplyr::group_by(unit, group) |>
 #   dplyr::mutate(group = dplyr::cur_group_id()) |>
-#   show()
+#   show(void = TRUE)
 # #
 # square() |>
 #   hatch(angle = pi/4) |>
@@ -59,6 +60,23 @@ decimalplaces <- function(x) {
   }
 }
 
+
+segments_to_paths <- function(df) {
+  df |>
+    dplyr::filter(!is.na(x) & !is.na(xend)) |>
+    # dplyr::mutate(group = 1:dplyr::n()) |>
+    tibble::rowid_to_column("row") |>
+    dplyr::mutate(x_ =    ifelse(row %% 2 != 0, x,    xend),
+                  xend_ = ifelse(row %% 2 != 0, xend, x),
+                  y_ =    ifelse(row %% 2 != 0, y,    yend),
+                  yend_ = ifelse(row %% 2 != 0, yend, y)) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(x = list(c(x_, xend_)), y = list(c(y_,yend_))) |>
+    tidyr::unnest(cols = c(x, y)) |>
+    dplyr::select(x, y, group = row)
+}
+
+
 rotate <- function(df, angle, around = c(0, 0)) {
 
   # w <- (max(df$x) - min(df$x))
@@ -76,4 +94,14 @@ rotate <- function(df, angle, around = c(0, 0)) {
                   y = round(y, 3))
 }
 
-# polygon(5) |> hatch(spacing = .1, angle = 0, keep = TRUE, single_line = TRUE)
+floor_spacing <- function(x, spacing) {
+  floor(x*(1/spacing))/(1/spacing)
+}
+
+ceiling_spacing <- function(x, spacing) {
+  ceiling(x*(1/spacing))/(1/spacing)
+}
+
+degrees_to_radians <- function(d) {
+  d * pi/180
+}
