@@ -12,7 +12,7 @@
 #'
 #' @examples
 #' circle() |> hatch() |> show()
-hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
+fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
 
   if(!"group" %in% names(df)) {
     df$group <- 0
@@ -64,6 +64,159 @@ hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line 
 #   dplyr::mutate(group = dplyr::cur_group_id()) |>
 #   show()
 
+
+#' Title
+#'
+#' @param df
+#' @param spacing
+#' @param angle
+#' @param frequency
+#' @param amplitude
+#' @param neat_edges
+#' @param keep_outline
+#' @param single_line
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fill_wave <- function(df, spacing = .1,
+                       angle = 0,
+                       frequency = .1,
+                       amplitude = .1,
+                       neat_edges = FALSE,
+                       keep_outline = TRUE,
+                       single_line = FALSE) {
+
+  if(!"group" %in% names(df)) {
+    df$group <- 1
+  }
+
+  # First create hatch segments in a bounding box with width and height equal to
+  # the diagonal of the shape
+  hatch_paths <- df |>
+    hatch_overlay(spacing) |>
+    lines_to_waves(frequency = frequency, amplitude = amplitude) |>
+    rotate(angle)
+
+  # Now instead of taking the endpoints of each hatch path and checking for
+  # intersections with each segment of the polygon, we need to take each point
+  # along the line and check if it's inside or outside of the polygon
+
+  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
+
+  # Need to update group ids here, since a line might pass out of the polygon
+  # and then come back in, resulting in two separate sections
+  hatch_paths <- hatch_paths |>
+    dplyr::rename(line = group) |>
+    dplyr::group_by(line) |>
+    dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::mutate(group = dplyr::cur_group_id())
+  # return(hatch_paths)
+
+  if(neat_edges) {
+    hatch_paths <- tidy_edges(hatch_paths, df) |>
+      dplyr::group_by(line, subsection) |>
+      dplyr::mutate(group = dplyr::cur_group_id())
+  }
+
+  # Need to do two things here:
+  # 1: clean intersections between waves and poly boundary
+  # 2: revise line groups, increment group when a line passes out and back into polygon
+
+  hatch_paths <- dplyr::filter(hatch_paths, inside)
+
+  if(keep_outline) {
+    df |>
+      # dplyr::mutate(group = 0) |>
+      dplyr::bind_rows(hatch_paths)
+  } else {
+    return(hatch_paths)
+  }
+
+}
+
+
+
+
+
+
+
+# hatch_wave(dplyr::mutate(square(), group = 1)) |>
+#   ggplot2::ggplot(ggplot2::aes(x, y, color = group, group = group)) +
+#   ggplot2::geom_path() +
+#   ggplot2::coord_fixed()
+
+
+# paths_to_segments <- function(df) {
+#
+# }
+
+
+
+
+#' Title
+#'
+#' @param df
+#' @param spacing
+#' @param single_line
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fill_inset <- function(df, spacing = .1, single_line = TRUE) {
+
+  data <- purrr::map_df(.x = seq(1, to = 0+spacing, by = -spacing),
+                        .f = ~df * .x,
+                        .id = "group") |>
+    dplyr::mutate(group = as.numeric(group))
+
+  if (single_line) {
+
+    # Need to edit the last point of each group
+
+    # Tried this as a 'proportion of line' problem but couldn't get it to work
+    # reliably. Still seems like there should be a viable solution that way, but
+    # I'm reframing as a line intersection problem instead: Where does the first
+    # line of the n+1th polygon intersect the last line of the nth polygon?
+
+    n <- nrow(df)
+    groups <- unique(data$group)
+
+    for (i in 1:(length(groups)-1)) {
+
+      P1 <- c(data$x[n*i-1], data$y[n*i-1])
+      P2 <- c(data$x[n*i]  , data$y[n*i])
+      P3 <- c(data$x[n*i+2], data$y[n*i+2])
+      P4 <- c(data$x[n*i+1], data$y[n*i+1])
+      # print(c(P1, P2, P3, P4))
+      #
+      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
+
+      # print(int)
+
+      data$x[n*i] <- int$x
+      data$y[n*i] <- int$y
+
+      data$group <- 1
+
+    }
+
+
+  }
+
+  # drop the last row, since it completes the innermost shape
+  data[1:(nrow(data)-1),]
+
+}
+
+
+
+# Unexported helpers ------------------------------------------------------
+
+
 hatch_overlay <- function(df, spacing) {
 
   width <- max(df$x) - min(df$x)
@@ -87,10 +240,10 @@ hatch_overlay <- function(df, spacing) {
 
   ymin <- y_center - half_diagonal
   ymax <- y_center + half_diagonal
-#
-#   y <- seq(from = ymin,
-#            to =   ymax,
-#            by = spacing)
+  #
+  #   y <- seq(from = ymin,
+  #            to =   ymax,
+  #            by = spacing)
 
   y <- seq(from = ymin, #diagonal/2,
            to =   ymax, #diagonal/2,
@@ -239,65 +392,6 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 #   show()
 
 
-hatch_wave <- function(df, spacing = .1,
-                       angle = 0,
-                       frequency = .1,
-                       amplitude = .1,
-                       neat_edges = FALSE,
-                       keep_outline = TRUE,
-                       single_line = FALSE) {
-
-  if(!"group" %in% names(df)) {
-    df$group <- 1
-  }
-
-  # First create hatch segments in a bounding box with width and height equal to
-  # the diagonal of the shape
-  hatch_paths <- df |>
-    hatch_overlay(spacing) |>
-    lines_to_waves(frequency = frequency, amplitude = amplitude) |>
-    rotate(angle)
-
-  # Now instead of taking the endpoints of each hatch path and checking for
-  # intersections with each segment of the polygon, we need to take each point
-  # along the line and check if it's inside or outside of the polygon
-
-  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
-
-  # Need to update group ids here, since a line might pass out of the polygon
-  # and then come back in, resulting in two separate sections
-  hatch_paths <- hatch_paths |>
-    dplyr::rename(line = group) |>
-    dplyr::group_by(line) |>
-    dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
-    dplyr::group_by(line, subsection) |>
-    dplyr::mutate(group = dplyr::cur_group_id())
-  # return(hatch_paths)
-
-  if(neat_edges) {
-    hatch_paths <- tidy_edges(hatch_paths, df) |>
-      dplyr::group_by(line, subsection) |>
-      dplyr::mutate(group = dplyr::cur_group_id())
-  }
-
-  # Need to do two things here:
-  # 1: clean intersections between waves and poly boundary
-  # 2: revise line groups, increment group when a line passes out and back into polygon
-
-  hatch_paths <- dplyr::filter(hatch_paths, inside)
-
-  if(keep_outline) {
-    df |>
-      # dplyr::mutate(group = 0) |>
-      dplyr::bind_rows(hatch_paths)
-  } else {
-    return(hatch_paths)
-  }
-
-}
-
-
-
 
 tidy_edges <- function(hatch_df, poly_df) {
 
@@ -387,65 +481,5 @@ tidy_edges <- function(hatch_df, poly_df) {
   }
 
   z
-
-}
-
-
-# hatch_wave(dplyr::mutate(square(), group = 1)) |>
-#   ggplot2::ggplot(ggplot2::aes(x, y, color = group, group = group)) +
-#   ggplot2::geom_path() +
-#   ggplot2::coord_fixed()
-
-
-# paths_to_segments <- function(df) {
-#
-# }
-
-
-
-
-fill_inset <- function(df, spacing = .1, single_line = TRUE) {
-
-  data <- purrr::map_df(.x = seq(1, to = 0+spacing, by = -spacing),
-                        .f = ~df * .x,
-                        .id = "group") |>
-    dplyr::mutate(group = as.numeric(group))
-
-  if (single_line) {
-
-    # Need to edit the last point of each group
-
-    # Tried this as a 'proportion of line' problem but couldn't get it to work
-    # reliably. Still seems like there should be a viable solution that way, but
-    # I'm reframing as a line intersection problem instead: Where does the first
-    # line of the n+1th polygon intersect the last line of the nth polygon?
-
-    n <- nrow(df)
-    groups <- unique(data$group)
-
-    for (i in 1:(length(groups)-1)) {
-
-      P1 <- c(data$x[n*i-1], data$y[n*i-1])
-      P2 <- c(data$x[n*i]  , data$y[n*i])
-      P3 <- c(data$x[n*i+2], data$y[n*i+2])
-      P4 <- c(data$x[n*i+1], data$y[n*i+1])
-      # print(c(P1, P2, P3, P4))
-      #
-      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
-
-      # print(int)
-
-      data$x[n*i] <- int$x
-      data$y[n*i] <- int$y
-
-      data$group <- 1
-
-    }
-
-
-  }
-
-  # drop the last row, since it completes the innermost shape
-  data[1:(nrow(data)-1),]
 
 }

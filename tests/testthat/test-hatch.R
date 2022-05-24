@@ -1,7 +1,7 @@
 test_that("hatch function works for a square", {
 
   # no rotation
-  test_df <- hatch(square(side = 1), spacing = .1, keep_outline = FALSE)
+  test_df <- fill_hatch(square(side = 1), spacing = .1, keep_outline = FALSE)
 
   expect_equal(test_df$x,
                c(rep(c(-.5, .5, .5, -.5), 4), -.5, .5))
@@ -11,7 +11,7 @@ test_that("hatch function works for a square", {
                rep(1:9, each = 2))
 
   # rotated 90 degrees
-  test_df <- hatch(square(side = 1), spacing = .1, angle = pi*.5, keep_outline = FALSE)
+  test_df <- fill_hatch(square(side = 1), spacing = .1, angle = pi*.5, keep_outline = FALSE)
 
   expect_equal(test_df$x,
                rep(seq(.4, -.4, -.1), each = 2))
@@ -21,7 +21,7 @@ test_that("hatch function works for a square", {
                rep(1:9, each = 2))
 
   # rotated 45 degrees
-  test_df <- hatch(square(side = 1), spacing = .1, angle = pi*.25, keep_outline = FALSE)
+  test_df <- fill_hatch(square(side = 1), spacing = .1, angle = pi*.25, keep_outline = FALSE)
 
   expect_equal(tolerance = .01,
                test_df$x,
