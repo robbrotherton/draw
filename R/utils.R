@@ -61,6 +61,11 @@ decimalplaces <- function(x) {
 }
 
 
+distance <- function(P1, P2) {
+  sqrt((P1[1] - P2[1])^2 + (P1[2] - P2[2])^2)
+}
+
+
 segments_to_paths <- function(df) {
   df |>
     dplyr::filter(!is.na(x) & !is.na(xend)) |>

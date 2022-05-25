@@ -25,13 +25,13 @@ test_that("Rcpp line intersection function returns expected intersection,
   P3 <- c(-.5, .5)
   P4 <- c(-.5,-.5)
 
-  expect_equal(lineLineIntersection(P1, P2, P3, P4),
+  expect_equal(lineLineIntersection(P1, P2, P3, P4, include_lineend = FALSE),
                data.frame(x = NA_real_, y = NA_real_))
 
   P3 <- c(.5, .5)
   P4 <- c(.5,-.5)
 
-  expect_equal(lineLineIntersection(P1, P2, P3, P4),
+  expect_equal(lineLineIntersection(P1, P2, P3, P4, include_lineend = FALSE),
                data.frame(x = NA_real_, y = NA_real_))
 
   })

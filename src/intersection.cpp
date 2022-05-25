@@ -7,11 +7,18 @@
 // using namespace std;
 using namespace Rcpp;
 
+
+double dist(NumericVector P1, NumericVector P2);
+
+
 // [[Rcpp::export]]
 DataFrame lineLineIntersection(NumericVector P1,
                                NumericVector P2,
                                NumericVector P3,
-                               NumericVector P4) {
+                               NumericVector P4,
+                               bool include_lineend = true) {
+
+  bool intersection;
 
   // // Line AB represented as a1x + b1y = c1
   double dx1 = P1[0] - P2[0]; // b1
@@ -39,8 +46,15 @@ DataFrame lineLineIntersection(NumericVector P1,
   double lambda1 = -((x-P1[0])*dx1 + (y-P1[1])*-dy1)/(dx1 * dx1 + dy1 * dy1);
   double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
 
-  if (((lambda1 >= 0) & (lambda1 <= 1) &
-       (lambda2 >= 0) & (lambda2 <= 1))) {
+  if (include_lineend) {
+    intersection = ((lambda1 >= -0.0001) & (lambda1 <= 1.0001) &
+                    (lambda2 >= -0.0001) & (lambda2 <= 1.0001));
+  } else {
+    intersection = ((lambda1 > 0) & (lambda1 < 1) &
+                    (lambda2 > 0) & (lambda2 < 1));
+  }
+
+  if (intersection) {
 
     return DataFrame::create(_["x"]= x, _["y"]= y);
 
@@ -74,6 +88,7 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
   // return(0);
 
   LogicalVector res(n_points);
+  bool on_line;
 
   for (int i = 0; i < n_points; ++i) {
 
@@ -100,6 +115,8 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
 
       for (int k = 0; k < (these_poly_x.size() - 1); ++k) {
 
+        on_line = false;
+
         // # Want a version of line.line.intersection that returns TRUE if there is an
         // # intersection, FALSE if not. Then count the number of TRUEs. If it's
         // # even, the point is outside the polygon; if it's odd, the point is
@@ -108,7 +125,16 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
         NumericVector P3 = NumericVector::create(these_poly_x[k], these_poly_y[k]);
         NumericVector P4 = NumericVector::create(these_poly_x[k+1], these_poly_y[k+1]);
 
-        NumericVector this_res = lineLineIntersection(P1, P2, P3, P4)["x"];
+        // First, check if the point is ON the line of the polygon. If it is,
+        // return TRUE and break
+        if (dist(P3, P1) + dist(P4, P1) == dist(P3, P4)) {
+          res[i] = true;
+          on_line = true;
+          break;
+        }
+
+
+        NumericVector this_res = lineLineIntersection(P1, P2, P3, P4, true)["x"];
 
         if(sum(is_na(this_res)) > 0 ) {
           ++n_intersections;
@@ -116,8 +142,8 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
 
       }
 
-      if(n_intersections % 2 != 0) {
-        res[i] = TRUE;
+      if(!on_line & (n_intersections % 2 != 0)) {
+        res[i] = true;
         break;
       }
 
@@ -128,6 +154,14 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
   }
 
   return(res);
+
+}
+
+double dist(NumericVector P1, NumericVector P2) {
+
+  double dx = P1[0] - P2[0];
+  double dy = P1[1] - P2[1];
+  return sqrt(dx * dx + dy * dy);
 
 }
 

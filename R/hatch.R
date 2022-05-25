@@ -129,7 +129,7 @@ fill_wave <- function(df, spacing = .1,
 
   if(keep_outline) {
     df |>
-      # dplyr::mutate(group = 0) |>
+      dplyr::mutate(group = 0) |>
       dplyr::bind_rows(hatch_paths)
   } else {
     return(hatch_paths)
@@ -138,6 +138,80 @@ fill_wave <- function(df, spacing = .1,
 }
 
 
+#' Title
+#'
+#' @param df
+#' @param spacing
+#' @param angle
+#' @param frequency
+#' @param amplitude
+#' @param neat_edges
+#' @param keep_outline
+#' @param single_line
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fill_zigzag <- function(df,
+                        spacing = .1,
+                        angle = 0,
+                        frequency = .1,
+                        amplitude = .1,
+                        neat_edges = TRUE,
+                        keep_outline = TRUE,
+                        single_line = FALSE) {
+
+  if(!"group" %in% names(df)) {
+    df$group <- 1
+  }
+
+  # First create hatch segments in a bounding box with width and height equal to
+  # the diagonal of the shape
+  hatch_paths <- df |>
+    hatch_overlay(spacing) |>
+    lines_to_zigzag(frequency = frequency, amplitude = amplitude) |>
+    rotate(angle)
+
+  # Now instead of taking the endpoints of each hatch path and checking for
+  # intersections with each segment of the polygon, we need to take each point
+  # along the line and check if it's inside or outside of the polygon
+
+  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
+
+  # Need to update group ids here, since a line might pass out of the polygon
+  # and then come back in, resulting in two separate sections
+  hatch_paths <- hatch_paths |>
+    dplyr::rename(line = group) |>
+    dplyr::group_by(line) |>
+    dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::mutate(group = dplyr::cur_group_id())
+  # return(hatch_paths)
+
+  if(neat_edges) {
+    hatch_paths <- tidy_edges(hatch_paths, df)
+      # dplyr::group_by(line, subsection) |>
+      # dplyr::mutate(group = dplyr::cur_group_id())
+  }
+
+  # Need to do two things here:
+  # 1: clean intersections between waves and poly boundary
+  # 2: revise line groups, increment group when a line passes out and back into polygon
+
+  hatch_paths <- dplyr::filter(hatch_paths, inside)
+
+  if(keep_outline) {
+    df |>
+      dplyr::mutate(group = 0) |>
+      dplyr::bind_rows(hatch_paths)
+  } else {
+    return(hatch_paths)
+  }
+
+}
+
+# d <- square() |> fill_zigzag(neat_edges = TRUE, keep_outline = TRUE)
 
 
 
@@ -366,6 +440,74 @@ lines_to_waves <- function(hatch_df, points = 50, frequency = .1, amplitude = .1
 
 }
 
+line_to_zigzag <- function(P1, P2, frequency = .1, amplitude = .1) {
+
+  distance <- distance(P1, P2)
+  points <- ceiling(distance/frequency + 1)
+
+  x <- seq(from = P1[1], to = P2[1], length.out = points)
+  y <- seq(from = P1[2], to = P2[2], length.out = points)
+
+  n <- 1:points
+
+  # y_offset <- rep(c(amplitude/2, -amplitude/2), points/2)
+
+  # print(c(y, y_offset))
+
+  tibble::tibble(x = x,
+                 y = y + ifelse(n %% 2 == 0, amplitude/2, -amplitude/2))
+
+}
+
+# rep(1:2, 3)
+#
+# square() |> hatch_overlay(.1) |> line_to_zigzag()
+#
+# line_to_zigzag(c(0, 0), c(1, 0))
+
+lines_to_zigzag <- function(hatch_df, frequency = .1, amplitude = .1) {
+
+  out <- vector(mode = "list", length = nrow(hatch_df)/2)
+  index <- 0
+
+  for (l in seq(1, nrow(hatch_df), by = 2)) {
+
+    index <- index + 1
+
+    P1 <- c(hatch_df$x[l], hatch_df$y[l])
+    P2 <- c(hatch_df$x[l+1], hatch_df$y[l+1])
+
+    out[[index]] <- line_to_zigzag(P1, P2, frequency, amplitude)
+
+  }
+
+  dplyr::bind_rows(out, .id = "group") |>
+    dplyr::mutate(group = as.numeric(group))
+
+}
+
+# s <- square()
+# h <- square() |>
+#   hatch_overlay(.1) |>
+#   lines_to_zigzag()
+# h$inside <- pointsInPolygons(h, square() |> dplyr::mutate(group = 1))
+# #
+# # h <- h |>
+# #   dplyr::rename(line = group) |>
+# #   dplyr::group_by(line) |>
+# #   dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
+# #   dplyr::group_by(line, subsection) |>
+# #   dplyr::mutate(group = dplyr::cur_group_id()) |>
+# #   tidy_edges()
+# #
+# ggplot2::ggplot() +
+#   ggplot2::geom_path(data = s, ggplot2::aes(x, y)) +
+#   ggplot2::geom_path(data = h, ggplot2::aes(x, y, group = group)) +
+#   ggplot2::geom_point(data = h, ggplot2::aes(x, y, group = group, color = inside)) +
+#   ggplot2::coord_fixed()
+#
+# square() |> fill_zigzag(neat_edges = TRUE) |> show()
+
 # d <- square() |>
 #   hatch_overlay(spacing = .05) |>
 #   rotate(pi*.25) |>
@@ -398,88 +540,125 @@ tidy_edges <- function(hatch_df, poly_df) {
   z <- hatch_df |>
     tibble::rowid_to_column("point_id")
 
-  # Drop any lines/sections that are entierly outside of the polygon
+  # Drop any lines/sections that are entirely outside of the polygon
   z2 <- z |>
-    dplyr::group_by(subsection) |>
-    dplyr::filter(sum(inside) > 0)
+    # dplyr::group_by(subsection) |>
+    dplyr::filter(inside)
 
   # Need to tag points as being first of last of their subsection
   first_points <- z2 |>
     dplyr::group_by(line, subsection) |>
-    dplyr::slice(1)
+    dplyr::slice(1) |>
+    dplyr::mutate(x2 = z$x[z$point_id==point_id - 1],
+                  y2 = z$y[z$point_id==point_id - 1],
+                  int = list(find_intersection(P1 = c(x, y),
+                                               P2 = c(x2, y2),
+                                               poly = poly_df)))
 
   last_points <- z2 |>
     dplyr::group_by(line, subsection) |>
-    dplyr::slice(dplyr::n())
+    dplyr::slice(dplyr::n()) |>
+    dplyr::mutate(x2 = z$x[z$point_id==point_id + 1],
+                  y2 = z$y[z$point_id==point_id + 1],
+                  int = list(find_intersection(P1 = c(x, y),
+                                               P2 = c(x2, y2),
+                                               poly = poly_df)))
 
   # Now can compute new points which intersect with edges of polygon
 
-  # deal with first points----
-  for(i in seq_len(nrow(first_points))) {
-    this_point_id <- first_points$point_id[i]
-    this_point_subsection <- first_points$subsection[i]
-    this_point_x <- first_points$x[i]
-    this_point_y <- first_points$y[i]
+  z3 <- z2 |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::group_split() |>
+    purrr::map2(.y = first_points$int,
+                .f = ~dplyr::add_row(.x,
+                                     x = .y$x,
+                                     y = .y$y,
+                                     inside = TRUE,
+                                     line = .x$line[1],
+                                     subsection = .x$subsection[1],
+                                     .before = 1)) |>
+    purrr::map2(.y = last_points$int,
+                .f = ~dplyr::add_row(.x,
+                                     x = .y$x,
+                                     y = .y$y,
+                                     inside = TRUE,
+                                     line = .x$line[1],
+                                     subsection = .x$subsection[1],
+                                     .after = nrow(.x)))
 
-    prev_point_id <- z$point_id[z$point_id==(this_point_id - 1)]
-    prev_point_x <- z$x[z$point_id==prev_point_id]
-    prev_point_y <- z$y[z$point_id==prev_point_id]
 
-    P1 <- c(this_point_x, this_point_y)
-    P2 <- c(prev_point_x, prev_point_y)
+  z4 <- z3 |>
+    dplyr::bind_rows() |>
+    dplyr::group_by(line, subsection) |>
+    dplyr::mutate(group = dplyr::cur_group_id()) |>
+    dplyr::filter(!is.na(x))
 
-    for(j in seq_len(nrow(poly_df) - 1)) {
-      P3 <- c(poly_df$x[j],   poly_df$y[j])
-      P4 <- c(poly_df$x[j+1], poly_df$y[j+1])
+  # This is leaving out some segments for which both endpoints are outside the
+  # polygon. Maybe this is an inefficient fix (and a baroque approach in general), but
+  # applying clip_hatch_lines picks up those segments
 
-      intersection <- lineLineIntersection(P1, P2, P3, P4)
+  x <- hatch_df |>
+    # dplyr::filter(!inside) |>
+    dplyr::group_by(line) |>
+    dplyr::group_split() |>
+    purrr::map_df(~clip_hatch_lines(.x, poly_df))
 
-      # IF there is an intersection, stop checking
-      if(!any(is.na(intersection))) break
-
-    }
-
-    # intersections[[i]] <- intersection
-    z$x[z$point_id==prev_point_id] <- intersection$x[1]
-    z$y[z$point_id==prev_point_id] <- intersection$y[1]
-    z$subsection[z$point_id==prev_point_id] <- this_point_subsection
-    z$inside[z$point_id==prev_point_id] <- TRUE
-
+  if(nrow(x) > 1) {
+    x |>
+      dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2) + max(z4$group),
+                    inside = TRUE) |>
+      dplyr::bind_rows(z4)
+  } else {
+    z4
   }
-
-  # deal with last points ----
-  for(i in seq_len(nrow(last_points))) {
-    this_point_id         <- last_points$point_id[i]
-    this_point_subsection <- last_points$subsection[i]
-    this_point_x          <- last_points$x[i]
-    this_point_y          <- last_points$y[i]
-
-    prev_point_id <- z$point_id[z$point_id==(this_point_id + 1)]
-    prev_point_x <- z$x[z$point_id==prev_point_id]
-    prev_point_y <- z$y[z$point_id==prev_point_id]
-
-    P1 <- c(this_point_x, this_point_y)
-    P2 <- c(prev_point_x, prev_point_y)
-
-    for(j in seq_len(nrow(poly_df) - 1)) {
-      P3 <- c(poly_df$x[j],   poly_df$y[j])
-      P4 <- c(poly_df$x[j+1], poly_df$y[j+1])
-
-      intersection <- lineLineIntersection(P1, P2, P3, P4)
-
-      # IF there is an intersection, stop checking
-      if(!any(is.na(intersection))) break
-
-    }
-
-    # intersections[[i]] <- intersection
-    z$x[z$point_id==prev_point_id] <- intersection$x[1]
-    z$y[z$point_id==prev_point_id] <- intersection$y[1]
-    z$subsection[z$point_id==prev_point_id] <- this_point_subsection
-    z$inside[z$point_id==prev_point_id] <- TRUE
-
-  }
-
-  z
 
 }
+
+find_intersection <- function(P1, P2, poly) {
+
+  # P1 is the point in question
+  # P2 is the neighboring point (before or after)
+
+  for(i in seq_len(nrow(poly)-1)) {
+    P3 <- c(poly$x[i], poly$y[i])
+    P4 <- c(poly$x[i+1], poly$y[i+1])
+
+    # first check if the point (P1) is on a polygon segment
+    # if(distance(P3, P1) + distance(P4, P1) == distance(P3, P4)) next
+
+    res <- lineLineIntersection(P1, P2, P3, P4, include_lineend = TRUE)
+
+    if(!is.na(res$x[1])) return(res)
+
+    # if(!is.na(res$x[1])) {
+    #   if(res$x[1]==P1[1] & res$y[1]==P1[2]) next
+    # } else {
+    #   return(res)
+    # }
+  }
+  return(data.frame(x = NA, y = NA))
+}
+
+# clip_zigzag_line <- function(lines_df, poly_df) {
+#
+#   # check every line segment against every polygon segment
+#   for (i in 1:lines) {
+#     for (j in 1:segments) {
+#
+#       # possible outcomes:
+#
+#       # There are two (or more) intersections. That means the segment passes
+#       # into and back out of the polygon and a segment with two ends is
+#       # required.
+#
+#       # There is one intersection. That means it either passes into or out of
+#       # the polygon. Need to figure out which is the case and alter one of the
+#       # endpoints.
+#
+#       # There are no intersections. Either the segment is entirely inside the
+#       # polygon, or entirely outside.
+#
+#     }
+#   }
+#
+# }
