@@ -11,8 +11,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lineLineIntersection
-DataFrame lineLineIntersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend);
-RcppExport SEXP _draw_lineLineIntersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP) {
+DataFrame lineLineIntersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend, bool return_logical);
+RcppExport SEXP _draw_lineLineIntersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP, SEXP return_logicalSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +21,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type P3(P3SEXP);
     Rcpp::traits::input_parameter< NumericVector >::type P4(P4SEXP);
     Rcpp::traits::input_parameter< bool >::type include_lineend(include_lineendSEXP);
-    rcpp_result_gen = Rcpp::wrap(lineLineIntersection(P1, P2, P3, P4, include_lineend));
+    Rcpp::traits::input_parameter< bool >::type return_logical(return_logicalSEXP);
+    rcpp_result_gen = Rcpp::wrap(lineLineIntersection(P1, P2, P3, P4, include_lineend, return_logical));
+    return rcpp_result_gen;
+END_RCPP
+}
+// line_intersection_lgl
+bool line_intersection_lgl(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend);
+RcppExport SEXP _draw_line_intersection_lgl(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type P1(P1SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P2(P2SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P3(P3SEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type P4(P4SEXP);
+    Rcpp::traits::input_parameter< bool >::type include_lineend(include_lineendSEXP);
+    rcpp_result_gen = Rcpp::wrap(line_intersection_lgl(P1, P2, P3, P4, include_lineend));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -34,6 +50,32 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< DataFrame >::type points(pointsSEXP);
     Rcpp::traits::input_parameter< DataFrame >::type polygons(polygonsSEXP);
     rcpp_result_gen = Rcpp::wrap(pointsInPolygons(points, polygons));
+    return rcpp_result_gen;
+END_RCPP
+}
+// point_in_polygon
+bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perimeter);
+RcppExport SEXP _draw_point_in_polygon(SEXP xSEXP, SEXP ySEXP, SEXP polygonSEXP, SEXP include_perimeterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type polygon(polygonSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_perimeter(include_perimeterSEXP);
+    rcpp_result_gen = Rcpp::wrap(point_in_polygon(x, y, polygon, include_perimeter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// points_in_polygon
+LogicalVector points_in_polygon(DataFrame points, DataFrame polygon);
+RcppExport SEXP _draw_points_in_polygon(SEXP pointsSEXP, SEXP polygonSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type points(pointsSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type polygon(polygonSEXP);
+    rcpp_result_gen = Rcpp::wrap(points_in_polygon(points, polygon));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -53,8 +95,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_draw_lineLineIntersection", (DL_FUNC) &_draw_lineLineIntersection, 5},
+    {"_draw_lineLineIntersection", (DL_FUNC) &_draw_lineLineIntersection, 6},
+    {"_draw_line_intersection_lgl", (DL_FUNC) &_draw_line_intersection_lgl, 5},
     {"_draw_pointsInPolygons", (DL_FUNC) &_draw_pointsInPolygons, 2},
+    {"_draw_point_in_polygon", (DL_FUNC) &_draw_point_in_polygon, 4},
+    {"_draw_points_in_polygon", (DL_FUNC) &_draw_points_in_polygon, 2},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };

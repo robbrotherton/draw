@@ -16,7 +16,8 @@ DataFrame lineLineIntersection(NumericVector P1,
                                NumericVector P2,
                                NumericVector P3,
                                NumericVector P4,
-                               bool include_lineend = true) {
+                               bool include_lineend = true,
+                               bool return_logical = false) {
 
   bool intersection;
 
@@ -34,7 +35,11 @@ DataFrame lineLineIntersection(NumericVector P1,
 
   if (determinant == 0) {
     // The lines are parallel.
-    return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
+    if(return_logical) {
+      return false;
+    } else {
+      return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
+    }
   }
 
   // Point of intersection; may be beyond the end of the lines
@@ -47,20 +52,80 @@ DataFrame lineLineIntersection(NumericVector P1,
   double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
 
   if (include_lineend) {
-    intersection = ((lambda1 >= -0.0001) & (lambda1 <= 1.0001) &
-                    (lambda2 >= -0.0001) & (lambda2 <= 1.0001));
+    intersection = ((lambda1 >= 0) & (lambda1 <= 1) &
+                    (lambda2 >= 0) & (lambda2 <= 1));
   } else {
     intersection = ((lambda1 > 0) & (lambda1 < 1) &
                     (lambda2 > 0) & (lambda2 < 1));
   }
 
   if (intersection) {
-
-    return DataFrame::create(_["x"]= x, _["y"]= y);
+    if(return_logical) {
+      return true;
+    } else {
+      return DataFrame::create(_["x"]= x, _["y"]= y);
+    }
 
   } else {
+    if(return_logical) {
+      return false;
+    } else {
+      return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
+    }
 
-    return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
+  }
+
+}
+
+
+
+// [[Rcpp::export]]
+bool line_intersection_lgl(NumericVector P1,
+                           NumericVector P2,
+                           NumericVector P3,
+                           NumericVector P4,
+                           bool include_lineend = true) {
+
+  bool intersection;
+
+  // // Line AB represented as a1x + b1y = c1
+  double dx1 = P1[0] - P2[0]; // b1
+  double dy1 = P2[1] - P1[1]; // a1
+  double s1 = dy1*(P1[0]) + dx1*(P1[1]);
+  //
+  // // Line CD represented as a2x + b2y = c2
+  double dx2 = P3[0] - P4[0]; // b2
+  double dy2 = P4[1] - P3[1]; // a2
+  double s2 = dy2*(P3[0]) + dx2*(P3[1]);
+
+  double determinant = dy1 * dx2 - dy2 * dx1;
+
+  if (determinant == 0) {
+    // The lines are parallel.
+    return false;
+  }
+
+  // Point of intersection; may be beyond the end of the lines
+  double x = (dx2*s1 - dx1*s2)/determinant;
+  double y = (dy1*s2 - dy2*s1)/determinant;
+
+  // Check the fraction of the lines where they meet. If it's not in the range
+  // [0, 1], the lines don't intersect
+  double lambda1 = -((x-P1[0])*dx1 + (y-P1[1])*-dy1)/(dx1 * dx1 + dy1 * dy1);
+  double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
+
+  if (include_lineend) {
+    intersection = ((lambda1 >= 0) & (lambda1 <= 1) &
+      (lambda2 >= 0) & (lambda2 <= 1));
+  } else {
+    intersection = ((lambda1 > 0) & (lambda1 < 1) &
+      (lambda2 > 0) & (lambda2 < 1));
+  }
+
+  if (intersection) {
+    return true;
+  } else {
+    return false;
   }
 
 }
@@ -102,7 +167,7 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
 
       if( (this_x < min(these_poly_x)) |
           (this_x > max(these_poly_x)) |
-          (this_y > max(these_poly_y)) |
+          (this_y < min(these_poly_y)) |
           (this_y > max(these_poly_y))) {
         continue;
       }
@@ -134,9 +199,9 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
         }
 
 
-        NumericVector this_res = lineLineIntersection(P1, P2, P3, P4, true)["x"];
+        bool this_res = lineLineIntersection(P1, P2, P3, P4, true, true)["x"];
 
-        if(sum(is_na(this_res)) > 0 ) {
+        if(this_res) {
           ++n_intersections;
         }
 
@@ -156,6 +221,109 @@ LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
   return(res);
 
 }
+
+
+// [[Rcpp::export]]
+bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perimeter = true) {
+
+  NumericVector poly_x = polygon["x"];
+  NumericVector poly_y = polygon["y"];
+  NumericVector poly_g(poly_x.size());
+
+  bool group_col = polygon.containsElementNamed("group");
+
+  if(group_col) {
+    poly_g = polygon["group"];
+  } else {
+    for(int i = 0; i < poly_x.size(); ++i) {
+      poly_g[i] = 1;
+    }
+  }
+
+  // Need to be able to accommodate groups of polygons, e.g. for letters with
+  // multiple sections
+
+  NumericVector poly_group_ids = unique(poly_g);
+  int n_polys = poly_group_ids.size();
+
+  // Rcout << poly_group_ids;
+
+  for (int j = 0; j < n_polys; ++j) {
+
+    NumericVector this_poly_x = poly_x[poly_g == poly_group_ids[j]];
+    NumericVector this_poly_y = poly_y[poly_g == poly_group_ids[j]];
+
+    // if( (x < min(this_poly_x)) |
+    //     (x > max(this_poly_x)) |
+    //     (y < min(this_poly_y)) |
+    //     (y > max(this_poly_y))) {
+    //   continue;
+    // }
+
+    double max_x = max(this_poly_x) + 1;
+    int n_intersections = 0;
+
+    NumericVector P1 = NumericVector::create(x, y);
+    NumericVector P2 = NumericVector::create(max_x, y);
+
+    // Now check each polygon edge and add up the intersections. If it's
+    // even, the point is outside the polygon; if it's odd, the point is
+    // inside.
+    for (int k = 0; k < (this_poly_x.size() - 1); ++k) {
+
+      // on_line = false;
+
+      NumericVector P3 = NumericVector::create(this_poly_x[k],   this_poly_y[k]);
+      NumericVector P4 = NumericVector::create(this_poly_x[k+1], this_poly_y[k+1]);
+
+      // First, check if the point is ON the perimeter of the polygon. If it
+      // is, return TRUE
+
+      if (dist(P3, P1) + dist(P4, P1) == dist(P3, P4)) {
+        return true;
+      }
+
+      bool this_res = line_intersection_lgl(P1, P2, P3, P4, true);
+
+      // Rcout << this_res;
+
+      if(this_res) {
+        ++n_intersections;
+      }
+
+    }
+
+    if(n_intersections % 2 != 0) {
+      return(true);
+    }
+
+  }
+
+  return(false);
+
+}
+
+// [[Rcpp::export]]
+LogicalVector points_in_polygon(DataFrame points, DataFrame polygon) {
+
+  int n_points = points.nrow();
+  NumericVector points_x = points["x"];
+  NumericVector points_y = points["y"];
+  LogicalVector res(n_points);
+
+  for (int i = 0; i < n_points; ++i) {
+
+    double x = points_x[i];
+    double y = points_y[i];
+
+    res[i] = point_in_polygon(x, y, polygon);
+
+  }
+
+  return res;
+
+}
+
 
 double dist(NumericVector P1, NumericVector P2) {
 

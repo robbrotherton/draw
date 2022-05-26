@@ -80,13 +80,14 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
 #' @export
 #'
 #' @examples
-fill_wave <- function(df, spacing = .1,
-                       angle = 0,
-                       frequency = .1,
-                       amplitude = .1,
-                       neat_edges = FALSE,
-                       keep_outline = TRUE,
-                       single_line = FALSE) {
+fill_wave <- function(df,
+                      spacing = .1,
+                      angle = 0,
+                      frequency = .1,
+                      amplitude = .1,
+                      neat_edges = FALSE,
+                      keep_outline = TRUE,
+                      single_line = FALSE) {
 
   if(!"group" %in% names(df)) {
     df$group <- 1
@@ -103,7 +104,7 @@ fill_wave <- function(df, spacing = .1,
   # intersections with each segment of the polygon, we need to take each point
   # along the line and check if it's inside or outside of the polygon
 
-  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
+  hatch_paths$inside <- points_in_polygon(hatch_paths, df)
 
   # Need to update group ids here, since a line might pass out of the polygon
   # and then come back in, resulting in two separate sections
@@ -177,7 +178,7 @@ fill_zigzag <- function(df,
   # intersections with each segment of the polygon, we need to take each point
   # along the line and check if it's inside or outside of the polygon
 
-  hatch_paths$inside <- pointsInPolygons(hatch_paths, df)
+  hatch_paths$inside <- points_in_polygon(hatch_paths, df)
 
   # Need to update group ids here, since a line might pass out of the polygon
   # and then come back in, resulting in two separate sections
