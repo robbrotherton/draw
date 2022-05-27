@@ -15,7 +15,7 @@
 fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
 
   if(!"group" %in% names(df)) {
-    df$group <- 0
+    df$group <- 1
   }
 
   width <-  max(df$x) - min(df$x)
@@ -30,11 +30,20 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
   hatch_paths <- df |>
     hatch_overlay(spacing) |>
     rotate(angle, around = c(center_x, center_y)) |>
-    clip_hatch_lines(df)
+    hatch_to_segments() |>
+    clip_paths(df)
+
+  hatch_paths <- hatch_paths[lengths(hatch_paths) != 0] |>
+    purrr::map(~dplyr::arrange(.x, d))
+    # purrr::map(~dplyr::mutate(.x, line = as.numeric(line))) |>
+    # purrr::map_df(~dplyr::distinct(.x)) |>
+    # purrr::map(~dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2)))
+
 
   # Clean and organize the output data
   hatch_points <- hatch_paths |>
-    dplyr::bind_rows() |>
+    dplyr::bind_rows(.id = "line") |>
+    dplyr::mutate(line = as.numeric(line)) |>
     tidyr::drop_na() |>
     dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2) + max(df$group))
 
@@ -315,14 +324,14 @@ hatch_overlay <- function(df, spacing) {
 
   ymin <- y_center - half_diagonal
   ymax <- y_center + half_diagonal
-  #
-  #   y <- seq(from = ymin,
-  #            to =   ymax,
-  #            by = spacing)
 
   y <- seq(from = ymin, #diagonal/2,
            to =   ymax, #diagonal/2,
            by = spacing)
+
+  # Random spacing...
+  # y <- runif(length(y), min = ymin, max = ymax) |>
+  #   sort()
 
   data.frame(y = rep(y, each = 2),
              x = c(xmin, xmax)) # + 1e-3
@@ -331,7 +340,7 @@ hatch_overlay <- function(df, spacing) {
 
 clip_hatch_lines <- function(hatch_df, polygon_df) {
 
-  # Check each hatch segment  for intersections with each segment of the polygon
+  # Check each hatch segment for intersections with each segment of the polygon
   h_segs <- nrow(hatch_df)
   p_segs <- nrow(polygon_df) - 1
 
@@ -363,7 +372,7 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
       P3 <- c(polygon_df$x[j]  , polygon_df$y[j])
       P4 <- c(polygon_df$x[j+1], polygon_df$y[j+1])
 
-      line_intersections_df[j,] <- lineLineIntersection(P1, P2, P3, P4)
+      line_intersections_df[j,] <- line_intersection(P1, P2, P3, P4)
 
     }
 
@@ -398,6 +407,36 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
   res
 
 }
+
+
+## CLIP 2 -------------
+# case when...
+
+# P1 in P2 in
+## could be entirely inside (no intersections) ::: if ints == 0, KEEP
+## could pass out and back in (even number of intersections) ::: keep points and ints
+## shouldn't have an odd number of intersections...
+
+# P1 out P2 out
+## could be entirely outside (no intersections) ::: if ints == 0, DISCARD
+## or could pass through polygon (even number of intersections) ::: keep ints, discard P1 & P2
+## shouldn't have an odd number of intersections...
+
+# P1 in P2 out
+## could cross one polygon segment, exiting ::: keep P! and int, discard P2
+## or could pass out, in, out (odd number of intersections)
+## shouldn't have an even number of intersections
+
+# P1 out P2 in
+## could cross one polygon segment, entering ::: keep int and P2, discard P1
+## or could pass in, out, in (odd number of intersections)
+## shouldn't have an even number of intersections
+
+
+# so the rule is... always keep ints and drop any points that are out.
+# this should always result in an even number of points, which can be arranged
+# by distance and grouped in pairs.
+
 # sig.
 # waldo::compare(.0001, 0, tolerance = .0001)
 # expect_equal(1e-1, 0, tolerance = e-1)

@@ -65,6 +65,32 @@ distance <- function(P1, P2) {
   sqrt((P1[1] - P2[1])^2 + (P1[2] - P2[2])^2)
 }
 
+# polygon_to_segments <- function(df) {
+#
+#   starts <- df |>
+#     dplyr::slice(seq(1, dplyr::n(), 2))
+#
+#   ends <- df |>
+#     dplyr::slice(seq(2, dplyr::n(), 2)) |>
+#     dplyr::rename(xend = x, yend = y)
+#
+#   dplyr::bind_cols(starts, ends)
+#
+# }
+
+hatch_to_segments <- function(df) {
+
+  starts <- df |>
+    dplyr::slice(seq(1, dplyr::n(), 2))
+
+  ends <- df |>
+    dplyr::slice(seq(2, dplyr::n(), 2)) |>
+    dplyr::rename(xend = x, yend = y)
+
+  dplyr::bind_cols(starts, ends)
+
+}
+
 
 segments_to_paths <- function(df) {
   df |>

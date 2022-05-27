@@ -5,6 +5,10 @@ lineLineIntersection <- function(P1, P2, P3, P4, include_lineend = TRUE, return_
     .Call(`_draw_lineLineIntersection`, P1, P2, P3, P4, include_lineend, return_logical)
 }
 
+line_intersection <- function(P1, P2, P3, P4, include_lineend = TRUE) {
+    .Call(`_draw_line_intersection`, P1, P2, P3, P4, include_lineend)
+}
+
 line_intersection_lgl <- function(P1, P2, P3, P4, include_lineend = TRUE) {
     .Call(`_draw_line_intersection_lgl`, P1, P2, P3, P4, include_lineend)
 }
@@ -19,6 +23,10 @@ point_in_polygon <- function(x, y, polygon, include_perimeter = TRUE) {
 
 points_in_polygon <- function(points, polygon) {
     .Call(`_draw_points_in_polygon`, points, polygon)
+}
+
+clip_paths <- function(hatch_segs, polygon) {
+    .Call(`_draw_clip_paths`, hatch_segs, polygon)
 }
 
 spiral <- function(coils, points, radius, inner_radius) {
