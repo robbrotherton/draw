@@ -1,43 +1,34 @@
 
 test_that("points are correctly labeled as being inside or outside polygons", {
 
-  test_points <- dplyr::tribble(
-    ~x, ~y,
-     1,  1,
-     2,  2,
-     3,  3,
-     4,  4,
-     5,  5
-  )
+  # Points outside
+  expect_false(point_in_polygon(1, 1, square(1)))
+  expect_false(point_in_polygon(-.3, -.4, star(5, .5)))
 
-  test_polygons <- dplyr::tribble(
-    ~x,   ~y, ~group,
-    2.5, 2.5, 1,
-    1.5, 2.5, 1,
-    1.5, 1.5, 1,
-    2.5, 1.5, 1,
-    2.5, 2.5, 1,
-    4.5, 4.5, 2,
-    3.5, 4.5, 2,
-    3.5, 3.5, 2,
-    4.5, 3.5, 2,
-    4.5, 4.5, 2
-  )
+  # Points inside
+  expect_true(point_in_polygon(0, 0, square(1)))
+  expect_true(point_in_polygon(.3, .3, square()))
+  expect_true(point_in_polygon(0, 0, star(5, .5)))
 
-  # test_polygons <- dplyr::bind_rows(.id = "group",
-  #                                   square() + 2,
-  #                                   square() + 4)
+  # Point on a side
+  expect_true(point_in_polygon(.5, 0, square()))
+
+  # Point on a corner
+  expect_true(point_in_polygon(.707, 0, square() |> rotate(pi/4)))
+
+  # For some reason this was causing a problem at one point...
+  expect_false(point_in_polygon(-0.6910000000, -0.308000000, star(9)))
+
+
+
+  test_points <- data.frame(x = 1:5, y = 1:5)
+  test_polygons <- dplyr::bind_rows(.id = "group",
+                                    square() + 2,
+                                    square() + 4)
 
   expect_identical(points_in_polygons(test_points, test_polygons),
                    c(FALSE, TRUE, FALSE, TRUE, FALSE))
 
-  expect_identical(pointsInPolygons(test_points, test_polygons),
-                   c(FALSE, TRUE, FALSE, TRUE, FALSE))
-
-  # ggplot() +
-  #   geom_path(data = test_polygons, aes(x, y, group = group)) +
-  #   geom_point(dat = test_points, aes(x, y, color = inside)) +
-  #   coord_fixed()
 
   # what about points exactly on an edge? Or on a corner--so two edges??
 
