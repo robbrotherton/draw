@@ -31,8 +31,10 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
     hatch_overlay(spacing) |>
     rotate(angle, around = c(center_x, center_y)) |>
     hatch_to_segments() |>
-    clip_paths(df)
+    clip_paths_complex(df)
+    # clip_paths(df)
 
+  # return(hatch_paths)
   hatch_paths <- hatch_paths[lengths(hatch_paths) != 0] |>
     purrr::map(~dplyr::arrange(.x, d))
     # purrr::map(~dplyr::mutate(.x, line = as.numeric(line))) |>

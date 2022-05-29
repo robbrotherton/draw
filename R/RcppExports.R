@@ -29,6 +29,10 @@ clip_paths <- function(hatch_segs, polygon) {
     .Call(`_draw_clip_paths`, hatch_segs, polygon)
 }
 
+clip_paths_complex <- function(hatch_segs, polygon) {
+    .Call(`_draw_clip_paths_complex`, hatch_segs, polygon)
+}
+
 spiral <- function(coils, points, radius, inner_radius) {
     .Call(`_draw_spiral`, coils, points, radius, inner_radius)
 }

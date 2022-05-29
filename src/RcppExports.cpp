@@ -106,6 +106,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// clip_paths_complex
+List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon);
+RcppExport SEXP _draw_clip_paths_complex(SEXP hatch_segsSEXP, SEXP polygonSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type hatch_segs(hatch_segsSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type polygon(polygonSEXP);
+    rcpp_result_gen = Rcpp::wrap(clip_paths_complex(hatch_segs, polygon));
+    return rcpp_result_gen;
+END_RCPP
+}
 // spiral
 DataFrame spiral(int coils, int points, double radius, double inner_radius);
 RcppExport SEXP _draw_spiral(SEXP coilsSEXP, SEXP pointsSEXP, SEXP radiusSEXP, SEXP inner_radiusSEXP) {
@@ -129,6 +141,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_draw_point_in_polygon", (DL_FUNC) &_draw_point_in_polygon, 4},
     {"_draw_points_in_polygon", (DL_FUNC) &_draw_points_in_polygon, 2},
     {"_draw_clip_paths", (DL_FUNC) &_draw_clip_paths, 2},
+    {"_draw_clip_paths_complex", (DL_FUNC) &_draw_clip_paths_complex, 2},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };

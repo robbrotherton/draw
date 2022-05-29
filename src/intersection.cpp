@@ -304,15 +304,18 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
     NumericVector this_poly_x = poly_x[poly_g == poly_group_ids[j]];
     NumericVector this_poly_y = poly_y[poly_g == poly_group_ids[j]];
 
-    // if( (x < min(this_poly_x)) |
-    //     (x > max(this_poly_x)) |
-    //     (y < min(this_poly_y)) |
-    //     (y > max(this_poly_y))) {
-    //   continue;
-    // }
+    if( (x < min(this_poly_x)) |
+        (x > max(this_poly_x)) |
+        (y < min(this_poly_y)) |
+        (y > max(this_poly_y))) {
+      continue;
+    }
 
     double max_x = max(this_poly_x) + 1;
-    int n_intersections = 0;
+    // int n_intersections = 0;
+
+    NumericVector ints_x(this_poly_x.size());
+    NumericVector ints_y(this_poly_x.size());
 
     NumericVector P1 = NumericVector::create(x, y);
     NumericVector P2 = NumericVector::create(max_x, y);
@@ -334,17 +337,44 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
         return true;
       }
 
-      bool this_res = line_intersection_lgl(P1, P2, P3, P4, true);
+      // Otherwise, get the coordinates of any intersections. We need the
+      // coordinates, rather than just TRUE/FALSE, so we can check for
+      // duplicates later.
+      DataFrame res = line_intersection(P1, P2, P3, P4, true);
+      NumericVector res_x = res["x"];
+      NumericVector res_y = res["y"];
 
-      // Rcout << this_res;
+      ints_x[k] = res_x[0];
+      ints_y[k] = res_y[0];
 
-      if(this_res) {
-        ++n_intersections;
+    }
+
+    // Check for duplicate points.
+    for(int d = 0; d < ints_x.size(); ++d) {
+
+      if((d == 0) &
+         (ints_x[d] == ints_x[ints_x.size() - 1]) &
+         (ints_y[d] == ints_y[ints_x.size() - 1])) {
+
+        ints_x[d] = NA_REAL;
+        ints_y[d] = NA_REAL;
+      }
+
+      if((d > 0) &
+         (ints_x[d] == ints_x[d-1]) &
+         (ints_y[d] == ints_y[d-1])) {
+
+        ints_x[d] = NA_REAL;
+        ints_y[d] = NA_REAL;
       }
 
     }
 
-    if(n_intersections % 2 != 0) {
+    // Now find the number of non-NAs. THis is the number of intersections
+    ints_x = na_omit(ints_x);
+    int n_intersections = ints_x.size();
+
+    if(n_intersections % 2 == 0) {
       return(true);
     }
 
@@ -408,8 +438,6 @@ List clip_paths(DataFrame hatch_segs, DataFrame polygon) {
 
   NumericVector poly_x    = polygon["x"];
   NumericVector poly_y    = polygon["y"];
-  // NumericVector poly_xend = polygon["xend"];
-  // NumericVector poly_yend = polygon["yend"];
   NumericVector poly_group= polygon["group"];
 
   // # We'll have a data.frame for each hatch segment, then bind_rows() at the end
@@ -447,24 +475,25 @@ List clip_paths(DataFrame hatch_segs, DataFrame polygon) {
       ints_d[j] = dist(P1, NumericVector::create(ints_x[j], ints_y[j]));
       ints_l[j] = i+1;
 
-      if((j == p_segs - 1) &
-         (ints_x[j] == ints_x[0]) &
-         (ints_y[j] == ints_y[0])) {
-        // If this intersection is the same as the previous one, disregard. This
-        // can happen when a line clips the end of two adjoining polygon
-        // segments.
+      // If this intersection is the same as the previous one, disregard. This
+      // can happen when a line clips the end of two adjoining polygon
+      // segments.
+      if((j > 0) &
+         (ints_x[j] == ints_x[j-1]) &
+         (ints_y[j] == ints_y[j-1])) {
+
         ints_x[j] = NA_REAL;
         ints_y[j] = NA_REAL;
         ints_d[j] = NA_REAL;
         ints_l[j] = NA_REAL;
       }
 
-      if((j > 0) &
-         (ints_x[j] == ints_x[j-1]) &
-         (ints_y[j] == ints_y[j-1])) {
-        // If this intersection is the same as the previous one, disregard. This
-        // can happen when a line clips the end of two adjoining polygon
-        // segments.
+      // Same check, but comparing the last result to the first to complete the
+      // circle
+      if((j == p_segs - 1) &
+         (ints_x[j] == ints_x[0]) &
+         (ints_y[j] == ints_y[0])) {
+
         ints_x[j] = NA_REAL;
         ints_y[j] = NA_REAL;
         ints_d[j] = NA_REAL;
@@ -473,109 +502,139 @@ List clip_paths(DataFrame hatch_segs, DataFrame polygon) {
 
     }
 
+    // Now drop any NAs
+    // ints_x = na_omit(ints_x);
+    // ints_y = na_omit(ints_y);
+    // ints_d = na_omit(ints_d);
+    // ints_l = na_omit(ints_l);
 
-    // Now drop any NAs (and duplicates?) and check how many intersections there are
-    ints_x = na_omit(ints_x);
-    ints_y = na_omit(ints_y);
-    ints_d = na_omit(ints_d);
-    ints_l = na_omit(ints_l);
-
+    // And only include a result when there's more than 1 point
+    // Might need a check for an even number of points too?
     if((ints_x.size() > 0)) { //  & (ints_x.size() % 2 == 0)
       res_x[i] = DataFrame::create(_["x"] = ints_x,
                                    _["y"] = ints_y,
                                    _["d"] = ints_d);
     }
 
-    // res_x = null_omit(res);
-    //       line_intersections_df <- line_intersections_df |>
-    //         dplyr::distinct() |>
-    //         tidyr::drop_na()
-    //
-    //         index <- index + 1
-    //
-    // # Need some checks here before adding a result to the list.
-    // # Is there just a single point? Can happen if a hatch line clips one corner
-    // # Or 3 points? Or any odd number?
-    // # Does the hatch segment duplicate a segment of the polygon?
-    //
-    //       if(nrow(line_intersections_df) %% 2 == 0) {
-    //
-    //         res[[index]] <- line_intersections_df |>
-    //         dplyr::mutate(d = (x - P1[1])^2 + (y - P1[2]^2)^2)
-    //
-    //         if(index %% 2 == 0) {
-    //           res[[index]] <- res[[index]] |>
-    //           dplyr::arrange(-d)
-    //         } else {
-    //           res[[index]] <- res[[index]] |>
-    //           dplyr::arrange(d)
-    //         }
-    //
-    //       }
-    //
   }
-  //
-    return res_x;
+
+  // Remove nulls from list here
+  return res_x;
 
 }
 
 
+// [[Rcpp::export]]
+List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
 
-/*** R
+  // It would be easier if the hatch input was segments (x, y, xend, yend)
+  int h_segs =   hatch_segs.nrow();
+  int p_segs =      polygon.nrow() - 1;
 
-# basic test
-test_points <- data.frame(x = 1:5, y = 1:5)
-test_polygons <- dplyr::bind_rows(.id = "group",
-                                  square() + 2,
-                                  square() + 4) %>%
-  dplyr::mutate(group = as.numeric(group))
+  NumericVector x    = hatch_segs["x"];
+  NumericVector y    = hatch_segs["y"];
+  NumericVector xend = hatch_segs["xend"];
+  NumericVector yend = hatch_segs["yend"];
 
-test_points$inside <- pointsInPolygons(test_points, test_polygons)
+  NumericVector poly_x    = polygon["x"];
+  NumericVector poly_y    = polygon["y"];
+  NumericVector poly_group= polygon["group"];
 
-ptm <- proc.time()
-pointsInPolygons(test_points, test_polygons)
-proc.time() - ptm
+  // # We'll have a data.frame for each hatch segment, then bind_rows() at the end
+  List res_x(h_segs);
+  // int index = 0;
 
-ptm <- proc.time()
-points_in_polygons(test_points, test_polygons)
-proc.time() - ptm
+  for(int i = 0; i < h_segs; ++i) {
 
-ggplot2::ggplot() +
-  ggplot2::geom_path(data = test_polygons, ggplot2::aes(x, y, group = group)) +
-  ggplot2::geom_point(data = test_points, ggplot2::aes(x, y, color = inside))
+    NumericVector P1 = NumericVector::create(x[i], y[i]);
+    NumericVector P2 = NumericVector::create(xend[i], yend[i]);
 
-# more complex test
-n_points <- 1000
-n_polys <- 50
-test_points <- data.frame(x = runif(n_points, min = -500, max = 500),
-                          y = runif(n_points, min = -500, max = 500))
-offsets <- data.frame(group = 1:n_polys,
-                      x_off = runif(n_polys, min = -500, max = 500),
-                      y_off = runif(n_polys, min = -500, max = 500))
-test_polygons <- purrr::map_df(.x = 1:n_polys,
-                               .f = ~square()*rnorm(1, mean = 150, sd = 20),
-                               .id = "group") %>%
-  dplyr::mutate(group = as.numeric(group)) %>%
-  dplyr::left_join(offsets) %>%
-  dplyr::mutate(x = x + x_off, y = y + y_off)
+    NumericVector ints_x(p_segs + 2, NA_REAL);
+    NumericVector ints_y(p_segs + 2, NA_REAL);
+    NumericVector ints_d(p_segs + 2, NA_REAL);
+    NumericVector ints_l(p_segs + 2, NA_REAL);
 
-ggplot2::ggplot() +
-  ggplot2::geom_path(data = test_polygons, ggplot2::aes(x, y, group = group)) +
-  ggplot2::geom_point(data = test_points, ggplot2::aes(x, y))
+    // ints_x[0] = x[i];
+    // ints_y[0] = y[i];
+    // ints_x[p_segs + 1] = xend[i];
+    // ints_y[p_segs + 1] = yend[i];
 
-test_points$inside <- pointsInPolygons(test_points, test_polygons)
+    for(int j = 0; j < p_segs; ++j) {
 
-ptm <- proc.time()
-pointsInPolygons(test_points, test_polygons)
-proc.time() - ptm
+      // Skip rows where the next row is from a different polygon
+      if((j < (p_segs)) & (poly_group[j+1] != poly_group[j])) {
+        continue;
+      }
 
-ptm <- proc.time()
-points_in_polygons(test_points, test_polygons)
-proc.time() - ptm
+      NumericVector P3 = NumericVector::create(poly_x[j], poly_y[j]);
+      NumericVector P4 = NumericVector::create(poly_x[j+1], poly_y[j+1]);
 
-ggplot2::ggplot() +
-  ggplot2::geom_path(data = test_polygons, ggplot2::aes(x, y, group = group)) +
-  ggplot2::geom_point(data = test_points, ggplot2::aes(x, y, color = inside))
+      DataFrame ints_df = line_intersection(P1, P2, P3, P4);
 
+      ints_x[j+1] = ints_df["x"];
+      ints_y[j+1] = ints_df["y"];
+      ints_d[j+1] = dist(P1, NumericVector::create(ints_x[j+1], ints_y[j+1]));
+      ints_l[j+1] = i+1;
 
-*/
+    }
+
+    // Include P1 and P2 if necessary
+    if(point_in_polygon(P1[0], P1[1], polygon)) {
+      ints_x[0] = P1[0];
+      ints_y[0] = P1[1];
+      ints_d[0] = 0.0;
+    }
+
+    if(point_in_polygon(P2[0], P2[1], polygon)) {
+      ints_x[p_segs + 1] = P2[0];
+      ints_y[p_segs + 1] = P2[1];
+      ints_d[p_segs + 1] = dist(P1, P2);
+    }
+
+    // Check for any duplicated points
+    for(int k = 0; k < ints_x.size(); ++k) {
+
+      if((k == 0) &
+         (ints_x[k] == ints_x[ints_x.size() - 1]) &
+         (ints_y[k] == ints_y[ints_x.size() - 1])) {
+
+        ints_x[k] = NA_REAL;
+        ints_y[k] = NA_REAL;
+        ints_d[k] = NA_REAL;
+        ints_l[k] = NA_REAL;
+      }
+
+      if((k > 0) &
+         (ints_x[k] == ints_x[k-1]) &
+         (ints_y[k] == ints_y[k-1])) {
+
+        ints_x[k] = NA_REAL;
+        ints_y[k] = NA_REAL;
+        ints_d[k] = NA_REAL;
+        ints_l[k] = NA_REAL;
+      }
+
+      // Same check, but comparing the last result to the first to complete the
+      // circle
+    }
+
+    // Now drop any NAs
+    ints_x = na_omit(ints_x);
+    ints_y = na_omit(ints_y);
+    ints_d = na_omit(ints_d);
+    ints_l = na_omit(ints_l);
+
+    // And only include a result when there's more than 1 point
+    // Might need a check for an even number of points too?
+    if((ints_x.size() > 0)) { //  & (ints_x.size() % 2 == 0)
+      res_x[i] = DataFrame::create(_["x"] = ints_x,
+                                   _["y"] = ints_y,
+                                   _["d"] = ints_d);
+    }
+
+  }
+
+  // Remove nulls from list here
+  return res_x;
+
+}
