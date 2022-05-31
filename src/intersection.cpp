@@ -10,6 +10,8 @@ using namespace Rcpp;
 // Define helpers
 double dist(NumericVector P1, NumericVector P2);
 List rm_null(List x);
+bool approxEqual(double a, double b, double e = 0.0001);
+IntegerVector sorted_indices(NumericVector x);
 
 // [[Rcpp::export]]
 DataFrame lineLineIntersection(NumericVector P1,
@@ -53,10 +55,10 @@ DataFrame lineLineIntersection(NumericVector P1,
 
   if (include_lineend) {
     intersection = ((lambda1 >= 0) & (lambda1 <= 1) &
-                    (lambda2 >= 0) & (lambda2 <= 1));
+      (lambda2 >= 0) & (lambda2 <= 1));
   } else {
     intersection = ((lambda1 > 0) & (lambda1 < 1) &
-                    (lambda2 > 0) & (lambda2 < 1));
+      (lambda2 > 0) & (lambda2 < 1));
   }
 
   if (intersection) {
@@ -99,7 +101,7 @@ DataFrame line_intersection(NumericVector P1,
 
   double determinant = dy1 * dx2 - dy2 * dx1;
 
-  if (determinant == 0) {
+  if (determinant == 0.0) {
     // The lines are parallel.
     return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
   }
@@ -114,11 +116,11 @@ DataFrame line_intersection(NumericVector P1,
   double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
 
   if (include_lineend) {
-    intersection = ((lambda1 >= 0) & (lambda1 <= 1) &
-      (lambda2 >= 0) & (lambda2 <= 1));
+    intersection = ((lambda1 >= -0.000001) & (lambda1 <= 1.0000001) &
+                    (lambda2 >= -0.000001) & (lambda2 <= 1.0000001));
   } else {
-    intersection = ((lambda1 > 0) & (lambda1 < 1) &
-      (lambda2 > 0) & (lambda2 < 1));
+    intersection = ((lambda1 > 0.0) & (lambda1 < 1.0) &
+                    (lambda2 > 0.0) & (lambda2 < 1.0));
   }
 
   if (intersection) {
@@ -531,6 +533,8 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
   int h_segs =   hatch_segs.nrow();
   int p_segs =      polygon.nrow() - 1;
 
+  // return h_segs;
+
   NumericVector x    = hatch_segs["x"];
   NumericVector y    = hatch_segs["y"];
   NumericVector xend = hatch_segs["xend"];
@@ -542,6 +546,9 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
 
   // # We'll have a data.frame for each hatch segment, then bind_rows() at the end
   List res_x(h_segs);
+  int segment_id = 0;
+  double prev_x = NA_REAL;
+  double prev_y = NA_REAL;
   // int index = 0;
 
   for(int i = 0; i < h_segs; ++i) {
@@ -552,7 +559,8 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
     NumericVector ints_x(p_segs + 2, NA_REAL);
     NumericVector ints_y(p_segs + 2, NA_REAL);
     NumericVector ints_d(p_segs + 2, NA_REAL);
-    NumericVector ints_l(p_segs + 2, NA_REAL);
+    // NumericVector ints_l(p_segs + 2, NA_REAL);
+    // NumericVector ints_g(p_segs + 2, NA_REAL);
 
     // ints_x[0] = x[i];
     // ints_y[0] = y[i];
@@ -574,7 +582,8 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
       ints_x[j+1] = ints_df["x"];
       ints_y[j+1] = ints_df["y"];
       ints_d[j+1] = dist(P1, NumericVector::create(ints_x[j+1], ints_y[j+1]));
-      ints_l[j+1] = i+1;
+      // ints_l[j+1] = i+1;
+      // ints_g[j+1] = segment_id;
 
     }
 
@@ -583,58 +592,135 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
       ints_x[0] = P1[0];
       ints_y[0] = P1[1];
       ints_d[0] = 0.0;
+      // ints_l[0] = i+1;
+      // ints_g[0] = segment_id;
     }
 
     if(point_in_polygon(P2[0], P2[1], polygon)) {
       ints_x[p_segs + 1] = P2[0];
       ints_y[p_segs + 1] = P2[1];
       ints_d[p_segs + 1] = dist(P1, P2);
+      // ints_l[0] = i+1;
+      // ints_g[0] = segment_id;
     }
 
     // Check for any duplicated points
-    for(int k = 0; k < ints_x.size(); ++k) {
+    for(int k = 1; k < p_segs + 2; ++k) {
 
-      if((k == 0) &
-         (ints_x[k] == ints_x[ints_x.size() - 1]) &
-         (ints_y[k] == ints_y[ints_x.size() - 1])) {
+      //  Check each point against each other point and NA matches
+      //  This is probably overkill and could be made more thoughtful.
+      // I think it's only necessary to check K against k-1 and 1 against [last]
+      for(int x = 0; x < k; ++x) {
+        if((approxEqual(ints_d[k], ints_d[x]))) {
 
-        ints_x[k] = NA_REAL;
-        ints_y[k] = NA_REAL;
-        ints_d[k] = NA_REAL;
-        ints_l[k] = NA_REAL;
+          ints_x[k] = NA_REAL;
+          ints_y[k] = NA_REAL;
+          ints_d[k] = NA_REAL;
+        }
       }
 
-      if((k > 0) &
-         (ints_x[k] == ints_x[k-1]) &
-         (ints_y[k] == ints_y[k-1])) {
+      // if((k == 0) &
+      //    (ints_d[0] == ints_d[(p_segs + 1)])) {
+      //    // (ints_x[k] == ints_x[ints_x.size() - 1]) &
+      //    // (ints_y[k] == ints_y[ints_x.size() - 1])) {
+      //
+      //   ints_x[p_segs + 1] = NA_REAL;
+      //   ints_y[p_segs + 1] = NA_REAL;
+      //   ints_d[p_segs + 1] = NA_REAL;
+      //   ints_l[p_segs + 1] = NA_REAL;
+      // }
 
-        ints_x[k] = NA_REAL;
-        ints_y[k] = NA_REAL;
-        ints_d[k] = NA_REAL;
-        ints_l[k] = NA_REAL;
-      }
-
-      // Same check, but comparing the last result to the first to complete the
-      // circle
+      // if((k > 0) &
+      //    (approxEqual(ints_d[k], ints_d[k-1]))) {
+      //   // (ints_x[k] == ints_x[k-1]) &
+      //   // (ints_y[k] == ints_y[k-1])) {
+      //
+      //   // Rcout << k << "^ samesies!\n";
+      //
+      //   ints_x[k] = NA_REAL;
+      //   ints_y[k] = NA_REAL;
+      //   ints_d[k] = NA_REAL;
+      //   ints_l[k] = NA_REAL;
+      // }
     }
 
     // Now drop any NAs
     ints_x = na_omit(ints_x);
     ints_y = na_omit(ints_y);
     ints_d = na_omit(ints_d);
-    ints_l = na_omit(ints_l);
+    // ints_l = na_omit(ints_l);
+
+    // If there's less than 2 valid intersections, nothing to record; move on to
+    // the next line
+    if(ints_x.size() < 2) continue;
+
+    // Sort by distance
+    IntegerVector idx = sorted_indices(ints_d);
+    ints_x = ints_x[idx];
+    ints_y = ints_y[idx];
+    ints_d = ints_d[idx];
+
+    // Now label segment groups
+    NumericVector ints_l(ints_x.size());
+    NumericVector ints_g(ints_x.size());
+
+    bool same_as_previous = approxEqual(ints_x[0], prev_x) &
+                            approxEqual(ints_y[0], prev_y);
+
+    if(same_as_previous) --segment_id;
+
+    for(int s = 0; s < ints_x.size(); ++s) {
+      if(s % 2 == 0) ++segment_id;
+      ints_g[s] = segment_id;
+      ints_l[s] = i+1;
+
+    }
+
+    // Now check if first point is same as the last point of the previous
+    // segment.
+    // if(!approx_equal(ints_x[0], prev_x) |
+    //    !approx_equal(ints_y[0], prev_y)) {
+    //   ++segment_id;
+    // }
+    //
+    prev_x = ints_x[ints_x.size()-1];
+    prev_y = ints_y[ints_y.size()-1];
 
     // And only include a result when there's more than 1 point
     // Might need a check for an even number of points too?
-    if((ints_x.size() > 0)) { //  & (ints_x.size() % 2 == 0)
-      res_x[i] = DataFrame::create(_["x"] = ints_x,
-                                   _["y"] = ints_y,
-                                   _["d"] = ints_d);
-    }
+    // if((ints_x.size() > 0)) { //  & (ints_x.size() % 2 == 0)
+    res_x[i] = DataFrame::create(_["x"] = ints_x,
+                                 _["y"] = ints_y,
+                                 _["d"] = ints_d,
+                                 _["line"] = ints_l,
+                                 _["seg_id"] = ints_g);
+    // }
 
   }
 
   // Remove nulls from list here
+  res_x = rm_null(res_x);
   return res_x;
 
 }
+
+
+// [[Rcpp::export]]
+bool approxEqual(double a, double b, double e) {
+  return abs(a - b) < e;
+}
+
+IntegerVector sorted_indices(NumericVector x) {
+  IntegerVector idx = seq_along(x) - 1;
+  std::sort(idx.begin(), idx.end(), [&](int i, int j){return x[i] < x[j];});
+  return idx;
+}
+
+// #include <iomanip>
+// #include <iostream>
+// #include <cmath>
+//
+// // [[Rcpp::export]]
+// bool approxEquals(double a, double b, double e) {
+//   return fabs(a - b) < e;
+// }

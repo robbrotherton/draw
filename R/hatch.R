@@ -4,7 +4,7 @@
 #' @param spacing the spacing between lines (if n is not specified)
 #' @param angle In radians
 #' @param keep_outline Logical: keep or drop the original outline of the polygon
-#' @param single_line Logical: Arrange the hatch lines into a single unbroken
+#' @param single_line Logical: Arrange the interior hatch lines into a single unbroken
 #'   line (good for pen plotter). Overrides \code{keep_outline}
 #'
 #' @return A data.frame
@@ -28,40 +28,32 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
   # to the diagonal of the shape, then rotate that df of hatch lines to the
   # desired angle
   hatch_paths <- df |>
-    hatch_overlay(spacing) |>
-    rotate(angle, around = c(center_x, center_y)) |>
+    hatch_overlay(spacing)
+
+  if(angle != 0) {
+    hatch_paths <- rotate(hatch_paths, angle, around = c(center_x, center_y))
+  }
+
+  hatch_paths <- hatch_paths |>
     hatch_to_segments() |>
-    clip_paths_complex(df)
-    # clip_paths(df)
-
-  # return(hatch_paths)
-  hatch_paths <- hatch_paths[lengths(hatch_paths) != 0] |>
-    purrr::map(~dplyr::arrange(.x, d))
-    # purrr::map(~dplyr::mutate(.x, line = as.numeric(line))) |>
-    # purrr::map_df(~dplyr::distinct(.x)) |>
-    # purrr::map(~dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2)))
-
-
-  # Clean and organize the output data
-  hatch_points <- hatch_paths |>
-    dplyr::bind_rows(.id = "line") |>
-    dplyr::mutate(line = as.numeric(line)) |>
-    tidyr::drop_na() |>
-    dplyr::mutate(group = rep(1:(dplyr::n()/2), each = 2) + max(df$group))
+    clip_paths_complex(df) |>
+    dplyr::bind_rows() |>
+    dplyr::select(x, y, group = seg_id)
 
   if(keep_outline) {
-    dplyr::bind_rows(df, hatch_points)
+    hatch_paths <- dplyr::mutate(hatch_paths, group = group + max(df$group))
+    dplyr::bind_rows(df, hatch_paths)
   } else {
-    hatch_points
+    hatch_paths
   }
 
 }
 
 # important tests to add:
-# star() |> hatch(angle = pi*.5, keep_outline = TRUE) |> show()
+# star() |> fill_hatch(angle = pi/2.01, keep_outline = TRUE) |> show()
 # make sure no points outside star, middle line bisecting star is present
 
-# star() |> hatch(spacing = .01, angle = pi/5) |> show()
+# star() |> fill_hatch(spacing = .01, angle = pi/5) |> show()
 # make sure no points outside star, middle line bisecting star is present
 
 # rectangle() |> hatch(spacing = .1, angle = pi/2) |> show()

@@ -12,6 +12,7 @@ arrange_grid <- function(df, nrow = NULL, ncol = NULL, spacing = 1) {
                   y = y + y_offset)
 
 }
+
 #
 # shapes <- dplyr::bind_rows(circle(),
 #                            square(),
@@ -103,8 +104,9 @@ segments_to_paths <- function(df) {
                   yend_ = ifelse(row %% 2 != 0, yend, y)) |>
     dplyr::rowwise() |>
     dplyr::mutate(x = list(c(x_, xend_)), y = list(c(y_,yend_))) |>
-    tidyr::unnest(cols = c(x, y)) |>
-    dplyr::select(x, y, group = row)
+    tidyr::unnest(cols = c(x, y))
+  # |>
+  #   dplyr::select(x, y, group = row)
 }
 
 
