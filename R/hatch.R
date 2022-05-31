@@ -101,35 +101,39 @@ fill_wave <- function(df,
   hatch_paths <- df |>
     hatch_overlay(spacing) |>
     lines_to_waves(frequency = frequency, amplitude = amplitude) |>
-    rotate(angle)
+    rotate(angle) |>
+    paths_to_segments() |>
+    clip_paths_complex(df) |>
+    dplyr::bind_rows() |>
+    dplyr::select(x, y, group = seg_id)
 
   # Now instead of taking the endpoints of each hatch path and checking for
   # intersections with each segment of the polygon, we need to take each point
   # along the line and check if it's inside or outside of the polygon
 
-  hatch_paths$inside <- points_in_polygon(hatch_paths, df)
-
-  # Need to update group ids here, since a line might pass out of the polygon
-  # and then come back in, resulting in two separate sections
-  hatch_paths <- hatch_paths |>
-    dplyr::rename(line = group) |>
-    dplyr::group_by(line) |>
-    dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
-    dplyr::group_by(line, subsection) |>
-    dplyr::mutate(group = dplyr::cur_group_id())
-  # return(hatch_paths)
-
-  if(neat_edges) {
-    hatch_paths <- tidy_edges(hatch_paths, df) |>
-      dplyr::group_by(line, subsection) |>
-      dplyr::mutate(group = dplyr::cur_group_id())
-  }
+  # hatch_paths$inside <- points_in_polygon(hatch_paths, df)
+  #
+  # # Need to update group ids here, since a line might pass out of the polygon
+  # # and then come back in, resulting in two separate sections
+  # hatch_paths <- hatch_paths |>
+  #   dplyr::rename(line = group) |>
+  #   dplyr::group_by(line) |>
+  #   dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
+  #   dplyr::group_by(line, subsection) |>
+  #   dplyr::mutate(group = dplyr::cur_group_id())
+  # # return(hatch_paths)
+  #
+  # if(neat_edges) {
+  #   hatch_paths <- tidy_edges(hatch_paths, df) |>
+  #     dplyr::group_by(line, subsection) |>
+  #     dplyr::mutate(group = dplyr::cur_group_id())
+  # }
 
   # Need to do two things here:
   # 1: clean intersections between waves and poly boundary
   # 2: revise line groups, increment group when a line passes out and back into polygon
 
-  hatch_paths <- dplyr::filter(hatch_paths, inside)
+  # hatch_paths <- dplyr::filter(hatch_paths, inside)
 
   if(keep_outline) {
     df |>
