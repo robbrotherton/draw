@@ -92,6 +92,27 @@ hatch_to_segments <- function(df) {
 
 }
 
+paths_to_segments <- function(df) {
+
+  # dplyr::group_by(df, group) |>
+    dplyr::mutate(df,
+                  xend = ifelse(group==dplyr::lead(group),
+                                dplyr::lead(x), NA),
+                  yend = ifelse(group==dplyr::lead(group),
+                                dplyr::lead(y), NA)) |>
+    tidyr::drop_na()
+
+  # starts <- df |>
+  #   dplyr::slice(seq(1, dplyr::n(), 2))
+  #
+  # ends <- df |>
+  #   dplyr::slice(seq(2, dplyr::n(), 2)) |>
+  #   dplyr::rename(xend = x, yend = y)
+  #
+  # dplyr::bind_cols(starts, ends)
+
+}
+
 
 segments_to_paths <- function(df) {
   df |>
