@@ -293,6 +293,8 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
     }
   }
 
+  // int skipped = 0;
+
   // Need to be able to accommodate groups of polygons, e.g. for letters with
   // multiple sections
 
@@ -329,6 +331,14 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
 
       // on_line = false;
 
+      NumericVector y_lims = NumericVector::create(this_poly_y[k], this_poly_y[k+1]);
+      if((y < min(y_lims)) | (y > max(y_lims))) {
+        // ++skipped;
+        ints_x[k] = NA_REAL;
+        ints_y[k] = NA_REAL;
+        continue;
+      }
+
       NumericVector P3 = NumericVector::create(this_poly_x[k],   this_poly_y[k]);
       NumericVector P4 = NumericVector::create(this_poly_x[k+1], this_poly_y[k+1]);
 
@@ -336,6 +346,7 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
       // is, return TRUE
 
       if (dist(P3, P1) + dist(P4, P1) == dist(P3, P4)) {
+        // Rcout << skipped;
         return true;
       }
 
@@ -350,6 +361,9 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
       ints_y[k] = res_y[0];
 
     }
+
+    // ints_x = na_omit(ints_x);
+    // ints_y = na_omit(ints_y);
 
     // Check for duplicate points.
     for(int d = 0; d < ints_x.size(); ++d) {
@@ -376,13 +390,16 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
     ints_x = na_omit(ints_x);
     int n_intersections = ints_x.size();
 
-    if(n_intersections % 2 == 0) {
-      return(true);
+    if((n_intersections > 0) &
+       (n_intersections % 2 == 0)) {
+      // Rcout << skipped;
+      return true;
     }
 
   }
 
-  return(false);
+  // Rcout << skipped;
+  return false;
 
 }
 
