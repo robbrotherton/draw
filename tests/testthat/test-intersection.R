@@ -1,8 +1,8 @@
 test_that("Rcpp line intersection function returns expected intersection or NA", {
 
 
-  expect_equal(lineLineIntersection(c(0, 0), c(10, 10),
-                                    c(5, 0), c(5, 10)),
+  expect_equal(line_intersection(c(0, 0), c(10, 10),
+                                 c(5, 0), c(5, 10)),
                data.frame(x = 5, y = 5))
 
 
@@ -25,7 +25,7 @@ test_that("Rcpp line intersection function returns expected intersection or NA",
   P3 <- c(-.5, .5)
   P4 <- c( .5, .5)
 
-  expect_equal(lineLineIntersection(P1, P2, P3, P4),
+  expect_equal(line_intersection(P1, P2, P3, P4),
                data.frame(x = NA_real_, y = NA_real_))
 
   # intersection at a single point
@@ -34,13 +34,13 @@ test_that("Rcpp line intersection function returns expected intersection or NA",
   P3 <- c(-.5, .5)
   P4 <- c(-.5,-.5)
 
-  expect_equal(lineLineIntersection(P1, P2, P3, P4, include_lineend = FALSE),
+  expect_equal(line_intersection(P1, P2, P3, P4, include_lineend = FALSE),
                data.frame(x = NA_real_, y = NA_real_))
 
   P3 <- c(.5, .5)
   P4 <- c(.5,-.5)
 
-  expect_equal(lineLineIntersection(P1, P2, P3, P4, include_lineend = FALSE),
+  expect_equal(line_intersection(P1, P2, P3, P4, include_lineend = FALSE),
                data.frame(x = NA_real_, y = NA_real_))
 
   })
