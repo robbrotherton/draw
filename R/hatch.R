@@ -12,7 +12,7 @@
 #'
 #' @examples
 #' circle() |> hatch() |> show()
-fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_line = FALSE) {
+fill_hatch <- function(df, spacing = .1, angle = NULL, keep_outline = TRUE, single_line = FALSE) {
 
   if(!"group" %in% names(df)) {
     df$group <- 1
@@ -27,8 +27,8 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
   hatch_paths <- df |>
     hatch_overlay(spacing)
 
-  if(angle != 0) {
-    hatch_paths <- rotate(hatch_paths, angle, around = c(center_x, center_y))
+  if(!is.null(angle)) {
+    hatch_paths <- purrr::map_df(angle, ~rotate(hatch_paths, .x, around = c(center_x, center_y)))
   }
 
   hatch_paths <- hatch_paths |>
@@ -48,7 +48,7 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
 }
 
 
-#' ill a polygon with sine waves
+#' Fill a polygon with sine waves
 #'
 #' @param df
 #' @param spacing
