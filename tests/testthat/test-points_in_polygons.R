@@ -24,9 +24,10 @@ test_that("points are correctly labeled as being inside or outside polygons", {
   test_points <- data.frame(x = 1:5, y = 1:5)
   test_polygons <- dplyr::bind_rows(.id = "group",
                                     square() + 2,
-                                    square() + 4)
+                                    square() + 4) |>
+    dplyr::mutate(group = as.numeric(group))
 
-  expect_identical(points_in_polygons(test_points, test_polygons),
+  expect_identical(points_in_polygon(test_points, test_polygons),
                    c(FALSE, TRUE, FALSE, TRUE, FALSE))
 
 
