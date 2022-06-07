@@ -1,11 +1,11 @@
 Package: draw
 Type: Package
-Title: Draw Basic Shapes
+Title: Draw Shapes
 Version: 0.0.9000
 Date: 2022-04-28
 Author: Rob Brotherton
 Maintainer: Rob Brotherton <rbrother@barnard.edu>
-Description: Some tools to draw (and show) basic shapes.
+Description: A package to draw and fill basic shapes.
 License: GPL (>= 2)
 Imports: 
     Rcpp (>= 1.0.8),
