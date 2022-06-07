@@ -24,9 +24,6 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
   center_x <- min(df$x) + width/2
   center_y <- min(df$y) + height/2
 
-  # First, create hatch segments in a bounding box with width and height equal
-  # to the diagonal of the shape, then rotate that df of hatch lines to the
-  # desired angle
   hatch_paths <- df |>
     hatch_overlay(spacing)
 
@@ -50,26 +47,8 @@ fill_hatch <- function(df, spacing = .1, angle = 0, keep_outline = TRUE, single_
 
 }
 
-# important tests to add:
-# star() |> fill_hatch(angle = pi/2.01, keep_outline = TRUE) |> show()
-# make sure no points outside star, middle line bisecting star is present
 
-# star() |> fill_hatch(spacing = .01, angle = pi/5) |> show()
-# make sure no points outside star, middle line bisecting star is present
-
-# rectangle() |> hatch(spacing = .1, angle = pi/2) |> show()
-
-# letters("MABEL") |> hatch(spacing = .01, angle = pi*.5) |> show()
-
-# hatch_multi
-# purrr::map_df(c(pi*.4, pi*.6), ~square() |>
-# hatch(angle = .x, keep_outline = FALSE), .id = "unit") |>
-#   dplyr::group_by(unit, group) |>
-#   dplyr::mutate(group = dplyr::cur_group_id()) |>
-#   show()
-
-
-#' Title
+#' ill a polygon with sine waves
 #'
 #' @param df
 #' @param spacing
@@ -108,34 +87,6 @@ fill_wave <- function(df,
     dplyr::bind_rows() |>
     dplyr::select(x, y, group = seg_id)
 
-  # Now instead of taking the endpoints of each hatch path and checking for
-  # intersections with each segment of the polygon, we need to take each point
-  # along the line and check if it's inside or outside of the polygon
-
-  # hatch_paths$inside <- points_in_polygon(hatch_paths, df)
-  #
-  # # Need to update group ids here, since a line might pass out of the polygon
-  # # and then come back in, resulting in two separate sections
-  # hatch_paths <- hatch_paths |>
-  #   dplyr::rename(line = group) |>
-  #   dplyr::group_by(line) |>
-  #   dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
-  #   dplyr::group_by(line, subsection) |>
-  #   dplyr::mutate(group = dplyr::cur_group_id())
-  # # return(hatch_paths)
-  #
-  # if(neat_edges) {
-  #   hatch_paths <- tidy_edges(hatch_paths, df) |>
-  #     dplyr::group_by(line, subsection) |>
-  #     dplyr::mutate(group = dplyr::cur_group_id())
-  # }
-
-  # Need to do two things here:
-  # 1: clean intersections between waves and poly boundary
-  # 2: revise line groups, increment group when a line passes out and back into polygon
-
-  # hatch_paths <- dplyr::filter(hatch_paths, inside)
-
   if(keep_outline) {
     df |>
       dplyr::mutate(group = 0) |>
@@ -147,7 +98,7 @@ fill_wave <- function(df,
 }
 
 
-#' Title
+#' Fill a polygon with a zigzag pattern
 #'
 #' @param df
 #' @param spacing
@@ -186,33 +137,6 @@ fill_zigzag <- function(df,
     dplyr::bind_rows() |>
     dplyr::select(x, y, group = seg_id)
 
-  # Now instead of taking the endpoints of each hatch path and checking for
-  # intersections with each segment of the polygon, we need to take each point
-  # along the line and check if it's inside or outside of the polygon
-
-  # hatch_paths$inside <- points_in_polygon(hatch_paths, df)
-  #
-  # # Need to update group ids here, since a line might pass out of the polygon
-  # # and then come back in, resulting in two separate sections
-  # hatch_paths <- hatch_paths |>
-  #   dplyr::rename(line = group) |>
-  #   dplyr::group_by(line) |>
-  #   dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
-  #   dplyr::group_by(line, subsection) |>
-  #   dplyr::mutate(group = dplyr::cur_group_id())
-  # # return(hatch_paths)
-  #
-  # if(neat_edges) {
-  #   hatch_paths <- tidy_edges(hatch_paths, df)
-  #     # dplyr::group_by(line, subsection) |>
-  #     # dplyr::mutate(group = dplyr::cur_group_id())
-  # }
-  #
-  # # Need to do two things here:
-  # # 1: clean intersections between waves and poly boundary
-  # # 2: revise line groups, increment group when a line passes out and back into polygon
-  #
-  # hatch_paths <- dplyr::filter(hatch_paths, inside)
 
   if(keep_outline) {
     df |>
@@ -224,26 +148,8 @@ fill_zigzag <- function(df,
 
 }
 
-# d <- square() |> fill_zigzag(neat_edges = TRUE, keep_outline = TRUE)
 
-
-
-
-
-# hatch_wave(dplyr::mutate(square(), group = 1)) |>
-#   ggplot2::ggplot(ggplot2::aes(x, y, color = group, group = group)) +
-#   ggplot2::geom_path() +
-#   ggplot2::coord_fixed()
-
-
-# paths_to_segments <- function(df) {
-#
-# }
-
-
-
-
-#' Title
+#' Fill a polygon with smaller versions of itself
 #'
 #' @param df
 #' @param spacing
@@ -278,11 +184,9 @@ fill_inset <- function(df, spacing = .1, single_line = TRUE) {
       P2 <- c(data$x[n*i]  , data$y[n*i])
       P3 <- c(data$x[n*i+2], data$y[n*i+2])
       P4 <- c(data$x[n*i+1], data$y[n*i+1])
-      # print(c(P1, P2, P3, P4))
-      #
-      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
 
-      # print(int)
+      # Edit cpp function to handle this case
+      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
 
       data$x[n*i] <- int$x
       data$y[n*i] <- int$y
@@ -300,7 +204,6 @@ fill_inset <- function(df, spacing = .1, single_line = TRUE) {
 }
 
 
-
 # Unexported helpers ------------------------------------------------------
 
 
@@ -312,11 +215,6 @@ hatch_overlay <- function(df, spacing) {
   # rotated hatch line length==diagonal of bounding box
 
   half_diagonal <- ceiling_spacing(diagonal/2, spacing)
-
-  # Need something in here to make sure hatch lines are drawn on the spacing
-  # intervals. I.e the starting number should be divisible by the spacing.
-  # s <- .1
-  # seq(floor(1.53*(1/s))/(1/s), ceiling(2.17*(1/s))/(1/s), s)
 
   x_center <- min(df$x) + width/2
   y_center <- min(df$y) + height/2
@@ -412,45 +310,6 @@ clip_hatch_lines <- function(hatch_df, polygon_df) {
 }
 
 
-## CLIP 2 -------------
-# case when...
-
-# P1 in P2 in
-## could be entirely inside (no intersections) ::: if ints == 0, KEEP
-## could pass out and back in (even number of intersections) ::: keep points and ints
-## shouldn't have an odd number of intersections...
-
-# P1 out P2 out
-## could be entirely outside (no intersections) ::: if ints == 0, DISCARD
-## or could pass through polygon (even number of intersections) ::: keep ints, discard P1 & P2
-## shouldn't have an odd number of intersections...
-
-# P1 in P2 out
-## could cross one polygon segment, exiting ::: keep P! and int, discard P2
-## or could pass out, in, out (odd number of intersections)
-## shouldn't have an even number of intersections
-
-# P1 out P2 in
-## could cross one polygon segment, entering ::: keep int and P2, discard P1
-## or could pass in, out, in (odd number of intersections)
-## shouldn't have an even number of intersections
-
-
-# so the rule is... always keep ints and drop any points that are out.
-# this should always result in an even number of points, which can be arranged
-# by distance and grouped in pairs.
-
-# sig.
-# waldo::compare(.0001, 0, tolerance = .0001)
-# expect_equal(1e-1, 0, tolerance = e-1)
-# 1e-324==0
-
-# lineLineIntersection(c(-.5, -1), c(-.5, 1),
-#                      c(-.5, -.5), c(-.5, .5))
-
-
-
-
 line_to_wave <- function(P1, P2, points = 50, frequency = .1, amplitude = .1) {
 
   points_x <- seq(from = P1[1], to = P2[1], length.out = points)
@@ -502,11 +361,6 @@ line_to_zigzag <- function(P1, P2, frequency = .1, amplitude = .1) {
 
 }
 
-# rep(1:2, 3)
-#
-# square() |> hatch_overlay(.1) |> line_to_zigzag()
-#
-# line_to_zigzag(c(0, 0), c(1, 0))
 
 lines_to_zigzag <- function(hatch_df, frequency = .1, amplitude = .1) {
 
@@ -528,54 +382,6 @@ lines_to_zigzag <- function(hatch_df, frequency = .1, amplitude = .1) {
     dplyr::mutate(group = as.numeric(group))
 
 }
-
-# s <- square()
-# h <- square() |>
-#   hatch_overlay(.1) |>
-#   lines_to_zigzag()
-# h$inside <- pointsInPolygons(h, square() |> dplyr::mutate(group = 1))
-# #
-# # h <- h |>
-# #   dplyr::rename(line = group) |>
-# #   dplyr::group_by(line) |>
-# #   dplyr::mutate(subsection = cumsum(inside!=dplyr::lag(inside, default = 1))) |>
-# #   dplyr::group_by(line, subsection) |>
-# #   dplyr::mutate(group = dplyr::cur_group_id()) |>
-# #   tidy_edges()
-# #
-# ggplot2::ggplot() +
-#   ggplot2::geom_path(data = s, ggplot2::aes(x, y)) +
-#   ggplot2::geom_path(data = h, ggplot2::aes(x, y, group = group)) +
-#   ggplot2::geom_point(data = h, ggplot2::aes(x, y, group = group, color = inside)) +
-#   ggplot2::coord_fixed()
-#
-# square() |> fill_zigzag(neat_edges = TRUE) |> show()
-
-# d <- square() |>
-#   hatch_overlay(spacing = .05) |>
-#   rotate(pi*.25) |>
-#   lines_to_waves() |>
-#   dplyr::mutate(inside = pointsInPolygons(data.frame(x, y),
-#                                             dplyr::mutate(square(), group = 1)))
-# #
-# d$inside <- points_in_polygons(d, dplyr::mutate(square(), group = 1))
-# #
-# # # could do this within the pipe...
-# #   # dplyr::mutate(inside = points_in_polygons(data.frame(x, y),
-# #                                             # dplyr::mutate(square(), group = 0))) |>
-# #   # rotate(pi*.25) |>
-# #   # dplyr::mutate(group = 1) |>
-# ggplot2::ggplot() +
-#   ggplot2::geom_path(data = d, ggplot2::aes(x, y, group = group, color = inside)) +
-#   ggplot2::geom_path(data = square(), ggplot2::aes(x, y, group = NULL)) +
-#   ggplot2::coord_fixed()
-
-# square() |>
-#   hatch_overlay(.1) |>
-#   lines_to_waves(f = .1, a = .1) |>
-#   rotate(0) |>
-#   show()
-
 
 
 tidy_edges <- function(hatch_df, poly_df) {
@@ -681,27 +487,3 @@ find_intersection <- function(P1, P2, poly) {
   }
   return(data.frame(x = NA, y = NA))
 }
-
-# clip_zigzag_line <- function(lines_df, poly_df) {
-#
-#   # check every line segment against every polygon segment
-#   for (i in 1:lines) {
-#     for (j in 1:segments) {
-#
-#       # possible outcomes:
-#
-#       # There are two (or more) intersections. That means the segment passes
-#       # into and back out of the polygon and a segment with two ends is
-#       # required.
-#
-#       # There is one intersection. That means it either passes into or out of
-#       # the polygon. Need to figure out which is the case and alter one of the
-#       # endpoints.
-#
-#       # There are no intersections. Either the segment is entirely inside the
-#       # polygon, or entirely outside.
-#
-#     }
-#   }
-#
-# }

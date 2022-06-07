@@ -1,83 +1,17 @@
-// C++ Implementation. To find the point of
-// intersection of two lines
+// C++ Implementation to find the point of intersection of two lines
 // https://www.geeksforgeeks.org/program-for-point-of-intersection-of-two-lines/
+
 #include <Rcpp.h>
 #include <bits/stdc++.h>
 
 // using namespace std;
 using namespace Rcpp;
 
-// Define helpers
+// Declare helper functions
 double dist(NumericVector P1, NumericVector P2);
 List rm_null(List x);
 bool approxEqual(double a, double b, double e = 0.0001);
 IntegerVector sorted_indices(NumericVector x);
-
-// [[Rcpp::export]]
-DataFrame lineLineIntersection(NumericVector P1,
-                               NumericVector P2,
-                               NumericVector P3,
-                               NumericVector P4,
-                               bool include_lineend = true,
-                               bool return_logical = false) {
-
-  bool intersection;
-
-  // // Line AB represented as a1x + b1y = c1
-  double dx1 = P1[0] - P2[0]; // b1
-  double dy1 = P2[1] - P1[1]; // a1
-  double s1 = dy1*(P1[0]) + dx1*(P1[1]);
-  //
-  // // Line CD represented as a2x + b2y = c2
-  double dx2 = P3[0] - P4[0]; // b2
-  double dy2 = P4[1] - P3[1]; // a2
-  double s2 = dy2*(P3[0]) + dx2*(P3[1]);
-
-  double determinant = dy1 * dx2 - dy2 * dx1;
-
-  if (determinant == 0) {
-    // The lines are parallel.
-    if(return_logical) {
-      return false;
-    } else {
-      return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
-    }
-  }
-
-  // Point of intersection; may be beyond the end of the lines
-  double x = (dx2*s1 - dx1*s2)/determinant;
-  double y = (dy1*s2 - dy2*s1)/determinant;
-
-  // Check the fraction of the lines where they meet. If it's not in the range
-  // [0, 1], the lines don't intersect
-  double lambda1 = -((x-P1[0])*dx1 + (y-P1[1])*-dy1)/(dx1 * dx1 + dy1 * dy1);
-  double lambda2 = -((x-P3[0])*dx2 + (y-P3[1])*-dy2)/(dx2 * dx2 + dy2 * dy2);
-
-  if (include_lineend) {
-    intersection = ((lambda1 >= 0) & (lambda1 <= 1) &
-      (lambda2 >= 0) & (lambda2 <= 1));
-  } else {
-    intersection = ((lambda1 > 0) & (lambda1 < 1) &
-      (lambda2 > 0) & (lambda2 < 1));
-  }
-
-  if (intersection) {
-    if(return_logical) {
-      return true;
-    } else {
-      return DataFrame::create(_["x"]= x, _["y"]= y);
-    }
-
-  } else {
-    if(return_logical) {
-      return false;
-    } else {
-      return DataFrame::create(_["x"]= NA_REAL, _["y"]= NA_REAL);
-    }
-
-  }
-
-}
 
 
 // [[Rcpp::export]]
@@ -184,98 +118,6 @@ bool line_intersection_lgl(NumericVector P1,
 }
 
 
-// lineLineIntersection(c(0, 0), c(10, 10), c(5, 0), c(5, 10))
-// lineLineIntersection(c(-1, 0), c(1, 0), c(-.5, 1), c(-.5, -1))
-// lineLineIntersection(c(0, 0), c(1, 1), c(2, 0), c(3, 10))
-
-
-// [[Rcpp::export]]
-LogicalVector pointsInPolygons(DataFrame points, DataFrame polygons) {
-
-  NumericVector x = points["x"];
-  NumericVector y = points["y"];
-  int n_points = x.size();
-
-  // Rcout << n_points;
-  // return(0);
-
-  NumericVector poly_x = polygons["x"];
-  NumericVector poly_y = polygons["y"];
-  NumericVector poly_group = polygons["group"];
-  int n_polys = max(poly_group);
-  // return(0);
-
-  LogicalVector res(n_points);
-  bool on_line;
-
-  for (int i = 0; i < n_points; ++i) {
-
-    double this_x = x[i];
-    double this_y = y[i];
-
-    for (int j = 1; j <= n_polys; ++j) {
-
-      NumericVector these_poly_x = poly_x[poly_group == j];
-      NumericVector these_poly_y = poly_y[poly_group == j];
-
-      if( (this_x < min(these_poly_x)) |
-          (this_x > max(these_poly_x)) |
-          (this_y < min(these_poly_y)) |
-          (this_y > max(these_poly_y))) {
-        continue;
-      }
-
-      double max_x = max(these_poly_x) + 1;
-      int n_intersections = 0;
-
-      NumericVector P1 = NumericVector::create(this_x, this_y);
-      NumericVector P2 = NumericVector::create(max_x, this_y);
-
-      for (int k = 0; k < (these_poly_x.size() - 1); ++k) {
-
-        on_line = false;
-
-        // # Want a version of line.line.intersection that returns TRUE if there is an
-        // # intersection, FALSE if not. Then count the number of TRUEs. If it's
-        // # even, the point is outside the polygon; if it's odd, the point is
-        // # inside.
-
-        NumericVector P3 = NumericVector::create(these_poly_x[k], these_poly_y[k]);
-        NumericVector P4 = NumericVector::create(these_poly_x[k+1], these_poly_y[k+1]);
-
-        // First, check if the point is ON the line of the polygon. If it is,
-        // return TRUE and break
-        if (dist(P3, P1) + dist(P4, P1) == dist(P3, P4)) {
-          res[i] = true;
-          on_line = true;
-          break;
-        }
-
-
-        bool this_res = lineLineIntersection(P1, P2, P3, P4, true, true)["x"];
-
-        if(this_res) {
-          ++n_intersections;
-        }
-
-      }
-
-      if(!on_line & (n_intersections % 2 != 0)) {
-        res[i] = true;
-        break;
-      }
-
-    }
-
-    // res[i] = FALSE;
-
-  }
-
-  return(res);
-
-}
-
-
 // [[Rcpp::export]]
 bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perimeter = true) {
 
@@ -293,11 +135,8 @@ bool point_in_polygon(double x, double y, DataFrame polygon, bool include_perime
     }
   }
 
-  // int skipped = 0;
-
   // Need to be able to accommodate groups of polygons, e.g. for letters with
   // multiple sections
-
   NumericVector poly_group_ids = unique(poly_g);
   int n_polys = poly_group_ids.size();
 
@@ -425,23 +264,6 @@ LogicalVector points_in_polygon(DataFrame points, DataFrame polygon) {
 }
 
 
-double dist(NumericVector P1, NumericVector P2) {
-
-  double dx = P1[0] - P2[0];
-  double dy = P1[1] - P2[1];
-  return sqrt(dx * dx + dy * dy);
-
-}
-
-
-List rm_null(List x) {
-  int n = x.size();
-  LogicalVector to_keep(n);
-  for (int i = 0; i < n; i++) {
-    to_keep[i] = !Rf_isNull(x[i]);
-  }
-  return x[to_keep];
-}
 
 // [[Rcpp::export]]
 List clip_paths(DataFrame hatch_segs, DataFrame polygon) {
@@ -542,6 +364,28 @@ List clip_paths(DataFrame hatch_segs, DataFrame polygon) {
 
 }
 
+
+// CLIP 2 -------------
+//   case when...
+//   P1 in P2 in
+//   could be entirely inside (no intersections) ::: if ints == 0, KEEP
+//     could pass out and back in (even number of intersections) ::: keep points and ints
+//     shouldn't have an odd number of intersections...
+//       P1 out P2 out
+//     could be entirely outside (no intersections) ::: if ints == 0, DISCARD
+//       or could pass through polygon (even number of intersections) ::: keep ints, discard P1 & P2
+//       shouldn't have an odd number of intersections...
+//         P1 in P2 out
+//       could cross one polygon segment, exiting ::: keep P! and int, discard P2
+//       or could pass out, in, out (odd number of intersections)
+//       shouldn't have an even number of intersections
+//       P1 out P2 in
+//       could cross one polygon segment, entering ::: keep int and P2, discard P1
+//       or could pass in, out, in (odd number of intersections)
+//       shouldn't have an even number of intersections
+//       so the rule is... always keep ints and drop any points that are out.
+//     this should always result in an even number of points, which can be arranged
+//       by distance and grouped in pairs.
 
 // [[Rcpp::export]]
 List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
@@ -682,7 +526,7 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
     NumericVector ints_g(ints_x.size());
 
     bool same_as_previous = approxEqual(ints_x[0], prev_x) &
-                            approxEqual(ints_y[0], prev_y);
+      approxEqual(ints_y[0], prev_y);
 
     if(same_as_previous) --segment_id;
 
@@ -722,6 +566,27 @@ List clip_paths_complex(DataFrame hatch_segs, DataFrame polygon) {
 }
 
 
+// Unexported helper functions
+
+double dist(NumericVector P1, NumericVector P2) {
+
+  double dx = P1[0] - P2[0];
+  double dy = P1[1] - P2[1];
+  return sqrt(dx * dx + dy * dy);
+
+}
+
+
+List rm_null(List x) {
+  int n = x.size();
+  LogicalVector to_keep(n);
+  for (int i = 0; i < n; i++) {
+    to_keep[i] = !Rf_isNull(x[i]);
+  }
+  return x[to_keep];
+}
+
+
 // [[Rcpp::export]]
 bool approxEqual(double a, double b, double e) {
   return abs(a - b) < e;
@@ -733,11 +598,3 @@ IntegerVector sorted_indices(NumericVector x) {
   return idx;
 }
 
-// #include <iomanip>
-// #include <iostream>
-// #include <cmath>
-//
-// // [[Rcpp::export]]
-// bool approxEquals(double a, double b, double e) {
-//   return fabs(a - b) < e;
-// }
