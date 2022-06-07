@@ -6,9 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-A package to generate gcode for a pen plotter. It can be used to create
-data.frames of x and y coordinates for shapes and lines, and to convert
-the data into gcode.
+A package to generate cartesian coordinates for various polygons, and to
+fill polygons with lines.
 
 ## Installation
 
@@ -33,10 +32,6 @@ library(draw)
 #> 
 #>     show
 
-offsets <- data.frame(group = as.character(1:6),
-                      x_offset = rep(seq(1, length.out = 3, by = 1.5), 2),
-                      y_offset = rep(c(1, 2.5), each = 3))
-
 shapes <- dplyr::bind_rows(circle(),
                            square(),
                            star(),
@@ -44,10 +39,7 @@ shapes <- dplyr::bind_rows(circle(),
                            rectangle(width = 1.5, height = 1), 
                            heart(),
                            .id = "group") |> 
-  dplyr::left_join(offsets) |>  
-  dplyr::mutate(x = x + x_offset, 
-                y = y + y_offset)
-#> Joining, by = "group"
+  arrange_grid(nrow = 3, ncol = 2, spacing = 1.5)
 
 show(shapes, void = TRUE)
 ```
@@ -57,7 +49,7 @@ show(shapes, void = TRUE)
 ## Fill a shape
 
 ``` r
-square() |> fill_hatch() |> show()
+square() |> fill_hatch(angle = c(pi*.25, pi*.75)) |> show()
 ```
 
 <img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
