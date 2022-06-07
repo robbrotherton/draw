@@ -572,7 +572,8 @@ double dist(NumericVector P1, NumericVector P2) {
 
   double dx = P1[0] - P2[0];
   double dy = P1[1] - P2[1];
-  return sqrt(dx * dx + dy * dy);
+  // return sqrt(dx * dx + dy * dy);
+  return dx * dx + dy * dy;
 
 }
 
@@ -587,10 +588,10 @@ List rm_null(List x) {
 }
 
 
-// [[Rcpp::export]]
 bool approxEqual(double a, double b, double e) {
   return abs(a - b) < e;
 }
+
 
 IntegerVector sorted_indices(NumericVector x) {
   IntegerVector idx = seq_along(x) - 1;

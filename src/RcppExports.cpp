@@ -90,19 +90,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// approxEqual
-bool approxEqual(double a, double b, double e);
-RcppExport SEXP _draw_approxEqual(SEXP aSEXP, SEXP bSEXP, SEXP eSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    Rcpp::traits::input_parameter< double >::type e(eSEXP);
-    rcpp_result_gen = Rcpp::wrap(approxEqual(a, b, e));
-    return rcpp_result_gen;
-END_RCPP
-}
 // spiral
 DataFrame spiral(int coils, int points, double radius, double inner_radius);
 RcppExport SEXP _draw_spiral(SEXP coilsSEXP, SEXP pointsSEXP, SEXP radiusSEXP, SEXP inner_radiusSEXP) {
@@ -125,7 +112,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_draw_points_in_polygon", (DL_FUNC) &_draw_points_in_polygon, 2},
     {"_draw_clip_paths", (DL_FUNC) &_draw_clip_paths, 2},
     {"_draw_clip_paths_complex", (DL_FUNC) &_draw_clip_paths_complex, 2},
-    {"_draw_approxEqual", (DL_FUNC) &_draw_approxEqual, 3},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };
