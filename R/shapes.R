@@ -114,6 +114,18 @@ heart <- function(points = 64, radius = .22) {
 
 
 # see https://math.stackexchange.com/questions/4293250/how-to-write-a-polar-equation-for-a-five-pointed-star
+#' Title
+#'
+#' @param points
+#' @param radius
+#' @param angle
+#' @param m
+#' @param k
+#'
+#' @return
+#' @export
+#'
+#' @examples
 star <- function(points = 5, radius = .5, angle = pi/10, m = 3, k = 1) {
 
   t <-  seq(0, 2 * pi, length.out = 2 * points + 1)
@@ -148,6 +160,18 @@ letter <- function(letter, nseg = 4, family = "sans", face = "regular") {
 
 }
 
+#' Title
+#'
+#' @param string
+#' @param nseg
+#' @param kerning
+#' @param family
+#' @param face
+#'
+#' @return
+#' @export
+#'
+#' @examples
 letters <- function(string, nseg = 4, kerning = 0, family = "sans", face = "regular") {
 
   letters <- strsplit(string, "")[[1]]

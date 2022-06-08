@@ -1,3 +1,14 @@
+#' Title
+#'
+#' @param df
+#' @param nrow
+#' @param ncol
+#' @param spacing
+#'
+#' @return
+#' @export
+#'
+#' @examples
 arrange_grid <- function(df, nrow = NULL, ncol = NULL, spacing = 1) {
 
   groups <- unique(df$group)
