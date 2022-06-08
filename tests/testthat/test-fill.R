@@ -48,3 +48,37 @@ test_that("fill_hatch function works for a square", {
   expect_equal(test_df$group,
                rep(1:11, each = 2))
 })
+
+
+
+test_that("fill_wave function works", {
+
+  test_df <- fill_wave(square(side = 1))
+
+  expect_equal(length(unique(test_df$group)),
+               15)
+
+})
+
+test_that("fill_zigzag function works", {
+
+  test_df <- fill_zigzag(square(side = 1))
+
+  expect_equal(length(unique(test_df$group)),
+               21)
+
+})
+
+test_that("fill_inset function works", {
+
+  test_df <- fill_inset(square(side = 1), single_line = FALSE)
+
+  expect_equal(length(unique(test_df$group)),
+               10)
+
+  test_df <- fill_inset(square(side = 1), single_line = TRUE)
+
+  expect_equal(length(unique(test_df$group)),
+               1)
+
+})
