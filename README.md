@@ -32,33 +32,72 @@ library(draw)
 #> 
 #>     show
 
-shapes <- dplyr::bind_rows(circle(),
-                           square(),
-                           star(),
-                           polygon(sides = 6),
-                           rectangle(width = 1.5, height = 1), 
-                           heart(),
-                           .id = "group") |> 
-  arrange_grid(nrow = 3, ncol = 2, spacing = 1.5)
-
-show(shapes, void = TRUE)
+circle() |> show()
 ```
 
-<img src="man/figures/README-shapes-1.png" width="100%" />
-
-## Fill a shape
+<img src="man/figures/README-shapes-1.png" width="50%" />
 
 ``` r
-square() |> fill_hatch() |> show()
+square() |> show()
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="50%" />
+<img src="man/figures/README-shapes-2.png" width="50%" />
+
+``` r
+star() |> show()
+```
+
+<img src="man/figures/README-shapes-3.png" width="50%" />
+
+``` r
+polygon(sides = 6) |> show()
+```
+
+<img src="man/figures/README-shapes-4.png" width="50%" />
+
+``` r
+rectangle(width = 1.5, height = 1) |> show()
+```
+
+<img src="man/figures/README-shapes-5.png" width="50%" />
+
+``` r
+heart() |> show()
+```
+
+<img src="man/figures/README-shapes-6.png" width="50%" />
+
+## Fill shapes
+
+``` r
+circle() |> fill_hatch() |> show()
+```
+
+<img src="man/figures/README-fills-1.png" width="50%" />
 
 ``` r
 square() |> fill_hatch(angle = c(pi*.25, pi*.75)) |> show()
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-2.png" width="50%" />
+<img src="man/figures/README-fills-2.png" width="50%" />
+
+``` r
+polygon(8) |> fill_wave() |> show()
+```
+
+<img src="man/figures/README-fills-3.png" width="50%" />
+
+``` r
+heart() |> fill_zigzag() |> show()
+```
+
+<img src="man/figures/README-fills-4.png" width="50%" />
+
+``` r
+star() |> fill_inset() |> show()
+```
+
+<img src="man/figures/README-fills-5.png" width="50%" />
 
 ## Fill many shapes
 
@@ -83,4 +122,4 @@ stars <- purrr::pmap(input, ~star(radius = ..2, angle = ..3) |>
 show(stars, void = TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />

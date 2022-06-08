@@ -32,28 +32,26 @@ devtools::install_github("robbrotherton/draw")
 
 ## Make shapes
 
-```{r shapes}
+```{r shapes, out.width='50%'}
 library(draw)
 
-shapes <- dplyr::bind_rows(circle(),
-                           square(),
-                           star(),
-                           polygon(sides = 6),
-                           rectangle(width = 1.5, height = 1), 
-                           heart(),
-                           .id = "group") |> 
-  arrange_grid(nrow = 3, ncol = 2, spacing = 1.5)
-
-show(shapes, void = TRUE)
-
+circle() |> show()
+square() |> show()
+star() |> show()
+polygon(sides = 6) |> show()
+rectangle(width = 1.5, height = 1) |> show()
+heart() |> show()
 
 ```
 
-## Fill a shape
+## Fill shapes
 
-```{r out.width='50%'}
-square() |> fill_hatch() |> show()
+```{r fills, out.width='50%'}
+circle() |> fill_hatch() |> show()
 square() |> fill_hatch(angle = c(pi*.25, pi*.75)) |> show()
+polygon(8) |> fill_wave() |> show()
+heart() |> fill_zigzag() |> show()
+star() |> fill_inset() |> show()
 ```
 
 
