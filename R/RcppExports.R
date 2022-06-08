@@ -2,30 +2,30 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 line_intersection <- function(P1, P2, P3, P4, include_lineend = TRUE) {
-    .Call(`_draw_line_intersection`, P1, P2, P3, P4, include_lineend)
+    .Call('_draw_line_intersection', PACKAGE = 'draw', P1, P2, P3, P4, include_lineend)
 }
 
 line_intersection_lgl <- function(P1, P2, P3, P4, include_lineend = TRUE) {
-    .Call(`_draw_line_intersection_lgl`, P1, P2, P3, P4, include_lineend)
+    .Call('_draw_line_intersection_lgl', PACKAGE = 'draw', P1, P2, P3, P4, include_lineend)
 }
 
 point_in_polygon <- function(x, y, polygon, include_perimeter = TRUE) {
-    .Call(`_draw_point_in_polygon`, x, y, polygon, include_perimeter)
+    .Call('_draw_point_in_polygon', PACKAGE = 'draw', x, y, polygon, include_perimeter)
 }
 
 points_in_polygon <- function(points, polygon) {
-    .Call(`_draw_points_in_polygon`, points, polygon)
+    .Call('_draw_points_in_polygon', PACKAGE = 'draw', points, polygon)
 }
 
 clip_paths <- function(hatch_segs, polygon) {
-    .Call(`_draw_clip_paths`, hatch_segs, polygon)
+    .Call('_draw_clip_paths', PACKAGE = 'draw', hatch_segs, polygon)
 }
 
 clip_paths_complex <- function(hatch_segs, polygon) {
-    .Call(`_draw_clip_paths_complex`, hatch_segs, polygon)
+    .Call('_draw_clip_paths_complex', PACKAGE = 'draw', hatch_segs, polygon)
 }
 
 spiral <- function(coils, points, radius, inner_radius) {
-    .Call(`_draw_spiral`, coils, points, radius, inner_radius)
+    .Call('_draw_spiral', PACKAGE = 'draw', coils, points, radius, inner_radius)
 }
 
