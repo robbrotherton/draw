@@ -19,7 +19,8 @@ DataFrame line_intersection(NumericVector P1,
                             NumericVector P2,
                             NumericVector P3,
                             NumericVector P4,
-                            bool include_lineend = true) {
+                            bool include_lineend = true,
+                            bool interior_only = true) {
 
   bool intersection;
 
@@ -43,6 +44,10 @@ DataFrame line_intersection(NumericVector P1,
   // Point of intersection; may be beyond the end of the lines
   double x = (dx2*s1 - dx1*s2)/determinant;
   double y = (dy1*s2 - dy2*s1)/determinant;
+
+  if(!interior_only) {
+    return DataFrame::create(_["x"]= x, _["y"]= y);
+  }
 
   // Check the fraction of the lines where they meet. If it's not in the range
   // [0, 1], the lines don't intersect

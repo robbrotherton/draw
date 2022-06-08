@@ -11,8 +11,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // line_intersection
-DataFrame line_intersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend);
-RcppExport SEXP _draw_line_intersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP) {
+DataFrame line_intersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend, bool interior_only);
+RcppExport SEXP _draw_line_intersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP, SEXP interior_onlySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +21,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type P3(P3SEXP);
     Rcpp::traits::input_parameter< NumericVector >::type P4(P4SEXP);
     Rcpp::traits::input_parameter< bool >::type include_lineend(include_lineendSEXP);
-    rcpp_result_gen = Rcpp::wrap(line_intersection(P1, P2, P3, P4, include_lineend));
+    Rcpp::traits::input_parameter< bool >::type interior_only(interior_onlySEXP);
+    rcpp_result_gen = Rcpp::wrap(line_intersection(P1, P2, P3, P4, include_lineend, interior_only));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -106,7 +107,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_draw_line_intersection", (DL_FUNC) &_draw_line_intersection, 5},
+    {"_draw_line_intersection", (DL_FUNC) &_draw_line_intersection, 6},
     {"_draw_line_intersection_lgl", (DL_FUNC) &_draw_line_intersection_lgl, 5},
     {"_draw_point_in_polygon", (DL_FUNC) &_draw_point_in_polygon, 4},
     {"_draw_points_in_polygon", (DL_FUNC) &_draw_points_in_polygon, 2},
