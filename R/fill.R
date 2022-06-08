@@ -186,7 +186,7 @@ fill_inset <- function(df, spacing = .1, single_line = TRUE) {
       P4 <- c(data$x[n*i+1], data$y[n*i+1])
 
       # Edit cpp function to handle this case
-      int <- line.line.intersection(P1, P2, P3, P4, interior.only = FALSE)
+      int <- line_intersection(P1, P2, P3, P4, interior_only = FALSE)
 
       data$x[n*i] <- int$x
       data$y[n*i] <- int$y
@@ -475,7 +475,7 @@ find_intersection <- function(P1, P2, poly) {
     # first check if the point (P1) is on a polygon segment
     # if(distance(P3, P1) + distance(P4, P1) == distance(P3, P4)) next
 
-    res <- lineLineIntersection(P1, P2, P3, P4, include_lineend = TRUE)
+    res <- line_intersection(P1, P2, P3, P4, include_lineend = TRUE)
 
     if(!is.na(res$x[1])) return(res)
 
