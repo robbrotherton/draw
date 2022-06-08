@@ -49,10 +49,16 @@ show(shapes, void = TRUE)
 ## Fill a shape
 
 ``` r
+square() |> fill_hatch() |> show()
+```
+
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="50%" />
+
+``` r
 square() |> fill_hatch(angle = c(pi*.25, pi*.75)) |> show()
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-2-2.png" width="50%" />
 
 ## Fill many shapes
 
