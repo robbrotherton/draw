@@ -10,6 +10,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// bezier
+DataFrame bezier(DataFrame points, int n_out);
+RcppExport SEXP _draw_bezier(SEXP pointsSEXP, SEXP n_outSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type points(pointsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_out(n_outSEXP);
+    rcpp_result_gen = Rcpp::wrap(bezier(points, n_out));
+    return rcpp_result_gen;
+END_RCPP
+}
 // line_intersection
 DataFrame line_intersection(NumericVector P1, NumericVector P2, NumericVector P3, NumericVector P4, bool include_lineend, bool interior_only);
 RcppExport SEXP _draw_line_intersection(SEXP P1SEXP, SEXP P2SEXP, SEXP P3SEXP, SEXP P4SEXP, SEXP include_lineendSEXP, SEXP interior_onlySEXP) {
@@ -91,6 +103,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// clip_paths_complex_outside
+List clip_paths_complex_outside(DataFrame hatch_segs, DataFrame polygon);
+RcppExport SEXP _draw_clip_paths_complex_outside(SEXP hatch_segsSEXP, SEXP polygonSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type hatch_segs(hatch_segsSEXP);
+    Rcpp::traits::input_parameter< DataFrame >::type polygon(polygonSEXP);
+    rcpp_result_gen = Rcpp::wrap(clip_paths_complex_outside(hatch_segs, polygon));
+    return rcpp_result_gen;
+END_RCPP
+}
 // spiral
 DataFrame spiral(int coils, int points, double radius, double inner_radius);
 RcppExport SEXP _draw_spiral(SEXP coilsSEXP, SEXP pointsSEXP, SEXP radiusSEXP, SEXP inner_radiusSEXP) {
@@ -107,12 +131,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_draw_bezier", (DL_FUNC) &_draw_bezier, 2},
     {"_draw_line_intersection", (DL_FUNC) &_draw_line_intersection, 6},
     {"_draw_line_intersection_lgl", (DL_FUNC) &_draw_line_intersection_lgl, 5},
     {"_draw_point_in_polygon", (DL_FUNC) &_draw_point_in_polygon, 4},
     {"_draw_points_in_polygon", (DL_FUNC) &_draw_points_in_polygon, 2},
     {"_draw_clip_paths", (DL_FUNC) &_draw_clip_paths, 2},
     {"_draw_clip_paths_complex", (DL_FUNC) &_draw_clip_paths_complex, 2},
+    {"_draw_clip_paths_complex_outside", (DL_FUNC) &_draw_clip_paths_complex_outside, 2},
     {"_draw_spiral", (DL_FUNC) &_draw_spiral, 4},
     {NULL, NULL, 0}
 };

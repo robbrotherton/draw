@@ -8,10 +8,10 @@ Maintainer: Rob Brotherton <rbrother@barnard.edu>
 Description: A package to draw and fill basic shapes.
 License: GPL (>= 2)
 Imports: 
-    Rcpp (>= 1.0.8),
+    Rcpp,
     dplyr,
     fontr,
-    ggplot2,  
+    ggplot2,
     purrr,
     tibble,
     tidyr
