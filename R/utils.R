@@ -24,6 +24,39 @@ arrange_grid <- function(df, nrow = NULL, ncol = NULL, spacing = 1) {
 
 }
 
+#' Title
+#'
+#' @param shape_fun
+#' @param dim
+#' @param n
+#' @param spacing
+#'
+#' @return
+#' @export
+#'
+#' @examples
+shape_grid <- function(shape_fun, dim = NULL, n = NULL, spacing = 1) {
+
+  if (is.null(dim)) {
+    dim <- rep(ceiling(sqrt(n)), 2)
+  }
+
+  if (is.null(n)) {
+    n <- prod(dim)
+  }
+
+  offsets <- data.frame(group = as.character(1:n),
+                        x_offset = rep(0:(dim[1] - 1), length.out = n) * spacing,
+                        y_offset = rep((dim[2] - 1):0, each = dim[1])[1:n] * spacing)
+
+  shapes <- purrr::map_df(1:n, ~shape_fun, .id = "group")
+
+  dplyr::left_join(shapes, offsets) |>
+    dplyr::transmute(x = x + x_offset, y = y + y_offset,
+                     group = as.numeric(group))
+
+}
+
 #
 # shapes <- dplyr::bind_rows(circle(),
 #                            square(),
