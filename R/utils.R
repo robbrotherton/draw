@@ -1,40 +1,16 @@
-#' Title
+#' Arrange shapes on a grid
 #'
-#' @param df
-#' @param nrow
-#' @param ncol
-#' @param spacing
+#' @param shape_fun A shape function used to create the shape to be tiled
+#' @param dim The dimensions (width and height) of the grid. One (or both) of
+#'   dim or n must be specified.
+#' @param n The number of shapes to be placed on a grid. If dim is not
+#'   specified, the dimensions will be automatically determined from n.
+#' @param spacing The spacing between the centers of shapes on the grid.
 #'
-#' @return
+#' @return A dataframe of x and y coordinates for the paths of each shape, with a group column to identify unique shapes.
 #' @export
 #'
-#' @examples
-arrange_grid <- function(df, nrow = NULL, ncol = NULL, spacing = 1) {
-
-  groups <- unique(df$group)
-  n_groups <- length(groups)
-
-  offsets <- data.frame(group = groups,
-                        x_offset = rep(seq(1, length.out = nrow, by = spacing), ncol),
-                        y_offset = rep(seq(1, length.out = ncol, by = spacing), each = nrow))
-
-  dplyr::left_join(df, offsets, by = "group") |>
-    dplyr::mutate(x = x + x_offset,
-                  y = y + y_offset)
-
-}
-
-#' Title
-#'
-#' @param shape_fun
-#' @param dim
-#' @param n
-#' @param spacing
-#'
-#' @return
-#' @export
-#'
-#' @examples
+#' @examples shape_grid(circle(), n = 9) |> show()
 shape_grid <- function(shape_fun, dim = NULL, n = NULL, spacing = 1) {
 
   if (is.null(dim)) {
@@ -57,45 +33,6 @@ shape_grid <- function(shape_fun, dim = NULL, n = NULL, spacing = 1) {
 
 }
 
-#
-# shapes <- dplyr::bind_rows(circle(),
-#                            square(),
-#                            star(),
-#                            polygon(sides = 6),
-#                            rectangle(width = 1.5, height = 1),
-#                            heart(),
-#                            .id = "group")
-
-# purrr::map_df(1:16, ~square(), .id = "group") |>
-#   arrange_grid(4, 4, 1.1) |>
-#   dplyr::mutate(group = as.numeric(group)) |>
-#   hatch(angle = pi/4) |>
-#   show()
-# as.logical(as.integer(runif(1)+.5))
-#
-# purrr::map_df(1:16, ~square(), .id = "group") |>
-#   arrange_grid(4, 4, 1) |>
-#   dplyr::mutate(group = as.numeric(group)) |>
-#   dplyr::group_split(group) |>
-#   purrr::map2_df(.y = runif(16, max = pi), ~if(as.logical(as.integer(runif(1)+.5))) hatch(.x, angle = .y) else .x, .id = "unit") |>
-#   dplyr::group_by(unit, group) |>
-#   dplyr::mutate(group = dplyr::cur_group_id()) |>
-#   show(void = TRUE)
-# #
-# square() |>
-#   hatch(angle = pi/4) |>
-#   show()
-
-# circle() |>
-#   hatch(angle = pi/2) |>
-#   show()
-
-# polygon(radius = .5) |>
-#   rotate(.1) |>
-#   hatch(spacing = .01, angle = .1, keep = FALSE) |>
-#   dplyr::bind_rows(polygon()) |>
-#   show()
-
 
 decimalplaces <- function(x) {
   if (abs(x - round(x)) > .Machine$double.eps^0.5) {
@@ -110,18 +47,6 @@ distance <- function(P1, P2) {
   sqrt((P1[1] - P2[1])^2 + (P1[2] - P2[2])^2)
 }
 
-# polygon_to_segments <- function(df) {
-#
-#   starts <- df |>
-#     dplyr::slice(seq(1, dplyr::n(), 2))
-#
-#   ends <- df |>
-#     dplyr::slice(seq(2, dplyr::n(), 2)) |>
-#     dplyr::rename(xend = x, yend = y)
-#
-#   dplyr::bind_cols(starts, ends)
-#
-# }
 
 hatch_to_segments <- function(df) {
 
