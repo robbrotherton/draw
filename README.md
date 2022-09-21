@@ -107,14 +107,14 @@ set.seed(1)
 n <- 15
 
 input <- data.frame(n = 1:n, 
-                    r = rnorm(n, mean = 10, sd = 2),
-                    a = runif(n, min = 0, max = 2*pi),
-                    ox = runif(n, min = 0, max = 120),
-                    oy = runif(n, min = 0, max = 200))
+                    radius = rnorm(n, mean = 10, sd = 2),
+                    angle = runif(n, min = 0, max = 2*pi),
+                    offset_x = runif(n, min = 0, max = 120),
+                    offset_y = runif(n, min = 0, max = 200))
 
 stars <- purrr::pmap(input, ~star(radius = ..2, angle = ..3) |> 
                              dplyr::mutate(x = x + ..4, y = y + ..5)) |>
-  purrr::map2(.y = input$a, .f = ~fill_hatch(.x, spacing = 1, angle = .y)) |> 
+  purrr::map2(.y = input$angle, .f = ~fill_hatch(.x, spacing = 1, angle = .y)) |> 
   dplyr::bind_rows(.id = "star") |> 
   dplyr::group_by(star, group) |> 
   dplyr::mutate(group = dplyr::cur_group_id())
@@ -122,4 +122,40 @@ stars <- purrr::pmap(input, ~star(radius = ..2, angle = ..3) |>
 show(stars, void = TRUE)
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
+<img src="man/figures/README-stars-1.png" width="100%" />
+
+``` r
+dim <- c(12, 17)
+n <- prod(dim)
+angles <- sample(c(0, pi*.5, pi*.25, pi*.75), n, replace = TRUE)
+
+square_grid <- shape_grid(square(), dim) |> 
+  dplyr::group_by(group) |> 
+  dplyr::group_split() |> 
+  purrr::map2_df(.y = angles, .f = ~fill_hatch(.x, angle = .y), .id = "shape") |> 
+  dplyr::group_by(shape, group) |> 
+  dplyr::mutate(group = dplyr::cur_group_id())
+#> Joining, by = "group"
+
+show(square_grid, void = TRUE)
+```
+
+<img src="man/figures/README-square-grid-1.png" width="100%" />
+
+``` r
+
+n <- 9^2
+angles <- runif(n, 0, pi)
+
+circle_grid <- shape_grid(circle(), n = n) |> 
+  dplyr::group_by(group) |> 
+  dplyr::group_split() |> 
+  purrr::map2_df(.y = angles, .f = ~fill_hatch(.x, angle = .y), .id = "shape") |> 
+  dplyr::group_by(shape, group) |> 
+  dplyr::mutate(group = dplyr::cur_group_id())
+#> Joining, by = "group"
+
+show(circle_grid, void = TRUE)
+```
+
+<img src="man/figures/README-circle-grid-1.png" width="100%" />
